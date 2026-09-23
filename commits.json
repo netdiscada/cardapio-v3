@@ -1,0 +1,40 @@
+[
+  {
+    "sha": "6f61288a87d5cd8d429990657cb22748b4e165da",
+    "node_id": "C_kwDOUdVEH9oAKDZmNjEyODhhODdkNWNkOGQ0Mjk5OTA2NTdjYjIyNzQ4YjRlMTY1ZGE",
+    "commit": {
+      "author": {
+        "name": "netdiscada",
+        "email": "fernando.l.alves0@gmail.com",
+        "date": "2026-09-16T11:28:38Z"
+      },
+      "committer": {
+        "name": "netdiscada",
+        "email": "fernando.l.alves0@gmail.com",
+        "date": "2026-09-16T11:28:38Z"
+      },
+      "message": "Cardapio Quatinga v2: reestruturacao modular (port fiel do v1.x)",
+      "tree": {
+        "sha": "0a0ac64682a1c4ea12c0035ce5e04590ab3f372d",
+        "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/trees/0a0ac64682a1c4ea12c0035ce5e04590ab3f372d"
+      },
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/commits/6f61288a87d5cd8d429990657cb22748b4e165da",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/commits/6f61288a87d5cd8d429990657cb22748b4e165da",
+    "html_url": "https://github.com/netdiscada/Cardapio-Quatinga/commit/6f61288a87d5cd8d429990657cb22748b4e165da",
+    "comments_url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/commits/6f61288a87d5cd8d429990657cb22748b4e165da/comments",
+    "author": null,
+    "committer": null,
+    "parents": [
+
+    ]
+  }
+]

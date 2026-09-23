@@ -1,0 +1,133 @@
+{
+  "sha": "27a21717e41d9d585b259866ea9f27a353222cd1",
+  "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/trees/27a21717e41d9d585b259866ea9f27a353222cd1",
+  "tree": [
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2d1c02a4e1af70cdc20d973372745da13b96e871",
+      "size": 105,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/2d1c02a4e1af70cdc20d973372745da13b96e871"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cefead051b1aaf834382ac70e7672233e3301c8f",
+      "size": 1365,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/cefead051b1aaf834382ac70e7672233e3301c8f"
+    },
+    {
+      "path": "css",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "fbb18bd9bae17c8ce26ac18eed5a87a49119fb7a",
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/trees/fbb18bd9bae17c8ce26ac18eed5a87a49119fb7a"
+    },
+    {
+      "path": "css/styles.css",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "06310e63d658454c7cf97b02e31ff50061686b51",
+      "size": 2850,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/06310e63d658454c7cf97b02e31ff50061686b51"
+    },
+    {
+      "path": "index.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0abc57cb12ae4199d015165c83bb59a60398e836",
+      "size": 35840,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/0abc57cb12ae4199d015165c83bb59a60398e836"
+    },
+    {
+      "path": "js",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1a4d7b7ebd022547c0836c83a4bf5280f31ac0e9",
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/trees/1a4d7b7ebd022547c0836c83a4bf5280f31ac0e9"
+    },
+    {
+      "path": "js/admin.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d5066bc0e1edae9754a9bfa378ebd2d4c990f80",
+      "size": 19842,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/4d5066bc0e1edae9754a9bfa378ebd2d4c990f80"
+    },
+    {
+      "path": "js/app.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "060a2cf66405b9ac0fe1f3ee9767f0b3dea908f8",
+      "size": 16587,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/060a2cf66405b9ac0fe1f3ee9767f0b3dea908f8"
+    },
+    {
+      "path": "js/auth.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b150a778177f5132f6d76141373d2d54d67e73df",
+      "size": 3368,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/b150a778177f5132f6d76141373d2d54d67e73df"
+    },
+    {
+      "path": "js/config.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1454426fcebcf7206b1bedea87e883097a9c5a06",
+      "size": 1465,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/1454426fcebcf7206b1bedea87e883097a9c5a06"
+    },
+    {
+      "path": "js/db.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96a084c50a0d4da52bd7e2e06a32dfd9fa267059",
+      "size": 7239,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/96a084c50a0d4da52bd7e2e06a32dfd9fa267059"
+    },
+    {
+      "path": "js/firebase.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fc4ed69ee8bfb5bc0628ce76137bcd47f3d52b32",
+      "size": 1450,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/fc4ed69ee8bfb5bc0628ce76137bcd47f3d52b32"
+    },
+    {
+      "path": "js/order.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "65425770606b265a5631e4af0adc4c1c7a01b41e",
+      "size": 10074,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/65425770606b265a5631e4af0adc4c1c7a01b41e"
+    },
+    {
+      "path": "js/ui.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9f52528651301946bdf6d1beef822de481f8a4e0",
+      "size": 17643,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/9f52528651301946bdf6d1beef822de481f8a4e0"
+    },
+    {
+      "path": "manifest.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "142422767cac3b0a8626517dd2e047fa1374d9f1",
+      "size": 515,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/142422767cac3b0a8626517dd2e047fa1374d9f1"
+    },
+    {
+      "path": "sw.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8b2172c86af5567348613b609f69d051d1d5813",
+      "size": 1489,
+      "url": "https://api.github.com/repos/netdiscada/Cardapio-Quatinga/git/blobs/a8b2172c86af5567348613b609f69d051d1d5813"
+    }
+  ],
+  "truncated": false
+}

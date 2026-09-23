@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio Quatinga</title>
+    
+    <!-- PWA / Web App Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" id="pwa-manifest">
+
+    <!-- Prevenção de Piscar Branco na Troca de Tema -->
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    </script>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Lobster+Two:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Bibliotecas Externas: Compressão de Imagem e Cropper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
+    <!-- Bibliotecas para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Poppins', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.3s ease; }
+        .modal-content { padding: 2rem; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-height: 90vh; overflow-y: auto; width: 90%; max-width: 500px; }
+        
+        html.dark { background-color: #000000; color: #f4f4f5; }
+        .dark .modal-content { background-color: #09090b; border: 1px solid #27272a; color: #f4f4f5; }
+        html:not(.dark) .modal-content { background-color: white; color: #1f2937; }
+        
+        #image-zoom-modal .modal-content { width: auto; max-width: 95%; padding: 0.5rem; background: none !important; box-shadow: none; border: none; }
+        #zoomed-image { max-width: 90vw; max-height: 85vh; border-radius: 0.75rem; }
+        
+        input:read-only { cursor: not-allowed; }
+        html:not(.dark) input:read-only { background-color: #f3f4f6; }
+        .dark input:read-only { background-color: #18181b !important; color: #a1a1aa; border-color: #27272a; }
+
+        /* Wizard Buttons */
+        .wizard-btn { transition: all 0.2s ease-in-out; }
+        .wizard-btn:hover { transform: scale(1.03); border-color: #3b82f6; }
+        .wizard-btn:active { transform: scale(0.98); }
+        .dark .wizard-btn:active { background-color: #1e3a8a; }
+        html:not(.dark) .wizard-btn:active { background-color: #eff6ff; }
+
+        /* APRIMORAMENTO: Refinamento de dark mode para consistência */
+        .dark {
+          --tw-border-opacity: 0.1;
+          --tw-bg-opacity: 0.9;
+          --tw-shadow: 0 0 #0000;
+        }
+
+        .dark .modal-content {
+          background-color: #09090b !important; /* Garante sobrescrita */
+          border-color: #27272a !important;
+        }
+
+        .dark #cropper-container,
+        .dark #imagePreviewContainer {
+          background-color: #09090b !important;
+        }
+
+        .dark .wizard-btn:active {
+          background-color: #1e3a8a !important;
+        }
+
+        .dark input:read-only {
+          background-color: #18181b !important;
+          color: #a1a1aa !important;
+          border-color: #27272a !important;
+        }
+
+        #cropper-container { max-height: 50vh; width: 100%; display: flex; justify-content: center; align-items: center; background-color: #f3f4f6; }
+        .dark #cropper-container { background-color: #18181b; }
+        #cropper-image { display: block; max-width: 100%; max-height: 100%; }
+
+        /* Toast Notifications */
+        #app-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #333; color: white; padding: 12px 24px; border-radius: 8px; z-index: 2000; opacity: 0; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; pointer-events: none; transform: translateX(-50%) translateY(20px); }
+        #app-toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        #app-toast.success { background-color: #22c55e; }
+        #app-toast.error { background-color: #ef4444; }
+        #app-toast.info { background-color: #3b82f6; }
+        
+        @media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+    <!-- Firebase (build compat, v11.6.1 identica ao v1.x) -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-50 dark:bg-black text-gray-800 dark:text-gray-200 transition-colors duration-300">
+
+    <!-- Banner Offline -->
+    <div id="offline-banner" class="hidden fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 text-center text-xs font-bold py-1 z-[100] shadow-md transition-all">
+        ⚡ Sem internet. Modo offline ativado.
+    </div>
+
+    <!-- Botões Flutuantes Superiores -->
+    <div class="absolute top-0 left-0 right-0 w-full z-50 p-2 flex justify-between no-print pointer-events-none">
+        <button id="darkModeToggle" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+            🌙 Modo Noturno
+        </button>
+        <button id="switchToAdmin" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+            ⚙️ ADM
+        </button>
+    </div>
+
+    <div id="app-container" class="container mx-auto max-w-4xl p-2 sm:p-6 pb-20 mt-8 sm:mt-6">
+        
+        <!-- ================= VISÃO DO USUÁRIO ================= -->
+        <div id="user-view" class="no-print">
+            <div id="form-container">
+                <div class="text-center mb-6 mt-4">
+                    <h1 class="text-4xl text-blue-600 dark:text-blue-500 drop-shadow-sm" style="font-family: 'Lobster Two', cursive;">Delícias Urbanas</h1>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
+                </div>
+
+                <div id="week-toggle-container" class="hidden mb-4 bg-white dark:bg-zinc-900 p-1 rounded-xl shadow-sm flex flex-col sm:flex-row gap-1 border border-gray-100 dark:border-zinc-800 fade-in">
+                    <button id="btn-current-week" class="flex-1 px-2 py-2 bg-blue-600 text-white rounded-lg font-bold shadow transition-colors text-sm">🍲 Desta Semana</button>
+                    <button id="btn-next-week" class="flex-1 px-2 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg font-bold transition-colors border border-gray-200 dark:border-zinc-700 text-sm">📅 Cardápio da Próxima Semana</button>
+                </div>
+
+                <!-- Autenticação do Usuário via RGF -->
+                <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 sm:p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
+                    <h2 class="block text-md font-semibold text-gray-800 dark:text-gray-100 mb-3">👤 1. Identificação</h2>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <div>
+                            <input type="text" id="employeeRGF" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
+                        </div>
+                        <div>
+                            <input type="text" id="employeeName" placeholder="Preenchido automaticamente" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 font-semibold rounded-lg transition-colors" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="order-section" class="hidden scroll-mt-2">
+                    <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
+                        <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
+                            <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
+                        </div>
+                        <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
+                        <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                        </div>
+                    </div>
+
+                    <div id="existing-order-container" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border-2 border-green-100 dark:border-green-900/50 fade-in transition-colors">
+                        <div class="text-center mb-6">
+                            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 mb-4">
+                                <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <h3 id="existing-order-title" class="text-2xl font-bold text-gray-800 dark:text-gray-100">Pedido Registado!</h3>
+                            <p class="text-gray-600 dark:text-gray-400 mt-2 font-medium">Você já realizou este pedido. Consulte abaixo as suas escolhas:</p>
+                        </div>
+                        <div id="existing-order-details" class="space-y-3 mb-4"></div>
+                    </div>
+
+                    <div id="order-wizard-container" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800 mb-4 transition-colors">
+                        <div id="order-wizard">
+                            <h3 id="wizard-day-title" class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3 text-center"></h3>
+                            <div id="wizard-options" class="grid grid-cols-2 gap-2 mb-3"></div>
+                            <div>
+                                <textarea id="wizard-notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" placeholder="Anotações? Ex: sem cebola"></textarea>
+                            </div>
+                            <div id="wizard-progress" class="flex space-x-2 justify-center mt-4"></div>
+                        </div>
+                    </div>
+
+                    <div id="submitButtonContainer" class="hidden text-center mt-2 mb-6">
+                        <button id="openConfirmationModal" class="w-full bg-green-500 dark:bg-green-600 text-white font-bold text-lg px-6 py-4 rounded-xl hover:bg-green-600 dark:hover:bg-green-500 shadow-md transition-transform transform active:scale-95 cursor-pointer">✅ Revisar e Finalizar Pedido</button>
+                    </div>
+                </div>
+
+                <div id="publicReportButtonContainer" class="hidden mt-8 pt-6 border-t border-gray-200 dark:border-zinc-800 text-center fade-in">
+                    <button id="btn-view-public-report" class="text-blue-600 dark:text-blue-400 font-bold hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center justify-center gap-2 mx-auto transition-colors cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Visualizar Relatório da Semana
+                    </button>
+                </div>
+                
+                <div id="guidanceSection" class="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-400 p-4 rounded-md mb-6 transition-colors"><p id="guidanceText" class="font-bold">Aguardando cardápio...</p></div>
+            </div>
+            
+            <div id="success-message" class="hidden text-center p-10 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-gray-100 dark:border-zinc-800 transition-colors">
+                <h2 class="text-3xl font-bold text-green-500 dark:text-green-400">Pedido Enviado com Sucesso!</h2>
+                <p id="success-text" class="mt-4 text-gray-600 dark:text-gray-400 font-medium"></p>
+                <button onclick="location.reload()" class="mt-6 bg-blue-600 dark:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer">Retornar ao Início</button>
+            </div>
+        </div>
+
+        <!-- ================= VISÃO DO ADMINISTRADOR ================= -->
+        <div id="admin-view" class="hidden no-print">
+            <header class="text-center border-b dark:border-zinc-800 pb-6 mb-6 mt-4">
+                <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100">Painel do Administrador</h1>
+                <p class="text-lg text-gray-600 dark:text-gray-400 mt-1 font-medium">Delícias Urbanas</p>
+                <div class="mt-4">
+                    <button id="adminLogoutBtn" class="bg-red-500 dark:bg-red-600 text-white font-bold text-sm px-4 py-2 rounded-lg hover:bg-red-600 dark:hover:bg-red-500 transition-colors cursor-pointer">Sair do Painel</button>
+                </div>
+            </header>
+            <div class="mb-8">
+                <button id="switchToUserFromAdmin" class="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">⬅️ Voltar para o Cardápio (Visão Usuário)</button>
+            </div>
+            
+            <!-- Gerenciamento de Cardápio -->
+            <section id="menu-management-section" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6">🖼️ Gerenciar Semanas e Cardápios</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Semana Atual -->
+                    <div class="border border-gray-200 dark:border-zinc-800 rounded-xl p-5 bg-gray-50 dark:bg-zinc-950 flex flex-col transition-colors">
+                        <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2"><span>📌</span> Cardápio Ativo (Atual)</h3>
+                        <div class="flex-1">
+                            <img id="admin-current-image" class="w-full h-40 object-cover rounded-lg mb-4 border dark:border-zinc-700 shadow-sm hidden" alt="Cardápio Atual" />
+                            <p id="admin-current-status" class="text-sm text-gray-500 dark:text-gray-400 mb-4 italic font-medium">Nenhum cardápio ativo.</p>
+                        </div>
+                        <button id="btn-turn-week" class="w-full bg-green-500 dark:bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-600 dark:hover:bg-green-500 transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>
+                            Forçar Atualização de Semana
+                        </button>
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2 text-center">A virada de semana ocorrerá <b class="text-green-600 dark:text-green-400">automaticamente</b> na próxima segunda-feira <span id="scheduled-date" class="font-bold text-blue-600 dark:text-blue-400"></span>.</p>
+                        <div class="text-center mt-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+                             <button id="btn-clear-current-orders" class="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline font-bold cursor-pointer">⚠️ Apagar todos os pedidos da semana atual</button>
+                        </div>
+                    </div>
+
+                    <!-- Próxima Semana -->
+                    <div class="border-2 border-blue-100 dark:border-blue-900/30 rounded-xl p-5 bg-blue-50/40 dark:bg-blue-900/10 flex flex-col transition-colors">
+                        <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2"><span>🚀</span> Preparar Próxima Semana</h3>
+                        <div class="flex-1">
+                            <!-- APRIMORAMENTO: Upload de imagem com drag-and-drop e feedback -->
+                            <div class="mb-4">
+                                <div id="dropArea" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center transition-all hover:border-gray-400 dark:hover:border-gray-500 cursor-pointer">
+                                    <div class="space-y-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16h10M7 8h10M12 4v12"></path></svg>
+                                        <p class="font-medium text-gray-700 dark:text-gray-300">Arraste a imagem aqui ou clique para selecionar</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Formatos aceitos: JPG, PNG (máx 5MB)</p>
+                                    </div>
+                                    <div id="uploadFeedback" class="mt-2 text-sm text-gray-600 dark:text-gray-400"></div>
+                                </div>
+                                
+                                <!-- Preview com informações -->
+                                <div id="imagePreviewContainer" class="hidden mt-4">
+                                    <div class="relative">
+                                        <img id="imagePreview" class="w-full h-48 object-cover rounded-lg border dark:border-zinc-700 shadow" />
+                                        <div class="absolute top-2 right-2 bg-gray-900/50 text-xs text-gray-200 dark:text-gray-800 px-2 py-1 rounded" id="imageInfo">
+                                            1200×800px
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                                        <span>Dimensões:</span> <span id="imageDimensions">-</span>
+                                        <span>Tamanho estimado:</span> <span id="imageSize">-</span>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button type="button" id="resetUpload" class="px-3 py-1 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded hover:bg-gray-300 dark:hover:bg-zinc-600">Redefinir</button>
+                                        <button type="button" id="cropImageBtn" class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded hover:bg-blue-700 dark:hover:bg-blue-400">Recortar Imagem</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h4 class="font-bold text-sm text-gray-700 dark:text-gray-300 mb-2">Feriados da Próxima Semana</h4>
+                            <!-- APRIMORAMENTO: Mini-calendário interativo para feriados -->
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">Feriados da Próxima Semana</span>
+                                    <div class="flex gap-2">
+                                        <button type="button" id="selectWeekdays" class="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs rounded hover:bg-blue-100 dark:hover:bg-blue-900/30">Dias Úteis</button>
+                                        <button type="button" id="selectWeekend" class="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs rounded hover:bg-blue-100 dark:hover:bg-blue-900/30">Fim de Semana</button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-7 gap-1 text-center" id="holidayCalendar">
+                                    <!-- Dias da semana (gerados via JS) -->
+                                    <div class="h-10 w-10 flex items-center justify-center bg-gray-50 dark:bg-zinc-800 rounded text-xs font-medium text-gray-600 dark:text-gray-400">Dom</div>
+                                    <div class="h-10 w-10 flex items-center justify-center bg-gray-50 dark:bg-zinc-800 rounded text-xs font-medium text-gray-600 dark:text-gray-400">Seg</div>
+                                    <div class="h-10 w-10 flex items-center justify-center bg-gray-50 dark:bg-zinc-800 rounded text-xs font-medium text-gray-600 dark:text-gray-400">Ter</div>
+                                    <div class="h-10 w-10 flex items-center justify-center bg-gray-50 dark:bg-zinc-800 rounded text-xs font-medium text-gray-600 dark:text-gray-400">Qua</div>
+                                    <div class="h-10 w-10 flex items-center justify-center bg-gray-50 dark:bg-zinc-800 rounded text-xs font-medium text-gray-600 dark:text-gray-400">Qui</div>
+                                    <div class="h-10 w-10 flex items-center justify-center bg-gray-50 dark:bg-zinc-800 rounded text-xs font-medium text-gray-600 dark:text-gray-400">Sex</div>
+                                    <div class="h-10 w-10 flex items-center justify-center bg-gray-50 dark:bg-zinc-800 rounded text-xs font-medium text-gray-600 dark:text-gray-400">Sáb</div>
+                                </div>
+                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400" id="holidayCount">
+                                    0 feriados selecionados
+                                </p>
+                            </div>
+                        </div>
+                        <button id="uploadImageBtn" class="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-zinc-700 disabled:text-gray-500 disabled:cursor-not-allowed transition shadow-md cursor-pointer" disabled>
+                            Salvar Cardápio para a Próxima Semana
+                        </button>
+                        <button id="deleteNextWeekBtn" class="mt-2 w-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold py-2 px-4 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition shadow-sm hidden cursor-pointer">
+                            🗑️ Cancelar / Apagar Próxima Semana
+                        </button>
+                        <div id="whatsapp-notification-container" class="mt-4 hidden">
+                            <button id="notifyWhatsAppBtn" class="w-full bg-green-500 dark:bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 dark:hover:bg-green-500 flex items-center justify-center gap-2 text-sm transition-colors cursor-pointer">
+                                Avisar no WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Resumo de Status -->
+            <section id="order-status-section" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4" id="status-section-title">📊 Status de Pedidos</h2>
+                <div id="order-status-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <p class="text-gray-500 dark:text-gray-400 font-medium">A carregar status dos pedidos...</p>
+                </div>
+            </section>
+
+            <!-- Gerenciamento de Funcionários -->
+            <section id="employee-management-section" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">👥 Gerenciamento de Funcionários</h2>
+                <!-- APRIMORAMENTO: Lista de funcionários com busca e ações em lote -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300">Funcionários Cadastrados</h3>
+                        <button id="toggleAddEmployeeForm" class="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm rounded hover:bg-blue-100 dark:hover:bg-blue-900/30">+ Adicionar</button>
+                    </div>
+                    <div class="mt-2">
+                        <input type="text" id="employeeSearch" placeholder="🔍 Buscar por nome ou RGF..." class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
+                    </div>
+                    <div id="employee-list-container" class="mt-3 space-y-2">
+                        <p class="text-gray-500 dark:text-gray-400 font-medium">A carregar lista de funcionários...</p>
+                    </div>
+                </div>
+                
+                <!-- Formulário de adição (inicialmente oculto) -->
+                <form id="add-employee-form" class="hidden grid sm:grid-cols-3 gap-4 items-end mb-6">
+                    <div>
+                        <label for="newEmployeeRGF" class="block text-sm font-bold text-gray-700 dark:text-gray-300">RGF</label>
+                        <input type="text" id="newEmployeeRGF" placeholder="RGF do funcionário" class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg transition-colors font-medium" required>
+                    </div>
+                    <div>
+                        <label for="newEmployeeName" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Nome Completo</label>
+                        <input type="text" id="newEmployeeName" placeholder="Nome do funcionário" class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg transition-colors font-medium" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 dark:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 dark:bg-blue-600 transition-colors cursor-pointer">Adicionar Funcionário</button>
+                </form>
+            </section>
+
+            <!-- Tabela de Pedidos -->
+            <section id="orders-section">
+                <div class="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b dark:border-zinc-800 pb-4 transition-colors">
+                    <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">Pedidos Recebidos</h2>
+                    <div class="flex space-x-2 bg-gray-100 dark:bg-zinc-900 p-1 rounded-lg border border-gray-200 dark:border-zinc-800">
+                        <button id="admin-view-current" class="px-4 py-1.5 bg-white dark:bg-zinc-800 shadow-sm rounded-md text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors cursor-pointer">Esta Semana</button>
+                        <button id="admin-view-next" class="px-4 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-md text-sm font-semibold transition-colors cursor-pointer">Próxima Semana</button>
+                    </div>
+                </div>
+                <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="w-full sm:w-auto">
+                        <input type="text" id="searchInput" placeholder="🔎 Buscar por nome..." class="w-full sm:w-64 px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-medium rounded-lg transition-colors">
+                    </div>
+                    <!-- APRIMORAMENTO: Botão de PDF mais proeminente como FAB -->
+                    <button id="generateReportBtn" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-700 dark:hover:bg-blue-400 transition-transform transform active:scale-95 z-[999] flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H3m8 4V3m-6 4h10M5 21h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 002-2v10a2 2 0 002 2z"></path></svg>
+                    </button>
+                </div>
+                <div id="ordersTableContainer" class="overflow-x-auto"><p class="text-gray-500 dark:text-gray-400 font-medium">A carregar pedidos...</p></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Modal de Zoom da Imagem -->
+    <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
+        <div class="modal-content">
+            <img id="zoomed-image" src="" alt="Imagem Ampliada">
+        </div>
+    </div>
+    
+    <!-- Modal de Relatório Público -->
+    <div id="public-report-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content w-full max-w-4xl h-[90vh] flex flex-col p-4 sm:p-6 !max-h-[95vh] bg-white dark:bg-white text-black dark:text-black">
+            <div class="flex justify-between items-center mb-4 shrink-0 no-pdf-print">
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800">Pré-visualização do Relatório</h2>
+                <button type="button" class="cancel-modal-btn text-gray-500 hover:text-red-500 text-3xl font-bold leading-none cursor-pointer">&times;</button>
+            </div>
+            
+            <div class="flex-1 overflow-auto bg-white rounded-lg p-2 sm:p-4 text-sm sm:text-base text-black" id="public-report-content"></div>
+            
+            <div class="mt-4 flex flex-col sm:flex-row justify-center gap-4 shrink-0 no-pdf-print">
+                <button type="button" class="cancel-modal-btn px-6 py-2 bg-gray-300 text-gray-800 font-bold rounded-lg hover:bg-gray-400 transition-colors w-full sm:w-auto cursor-pointer">Fechar Pré-visualização</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do Cropper -->
+    <div id="cropper-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content w-full max-w-2xl h-[80vh] flex flex-col p-4 sm:p-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white shrink-0">Recortar Imagem</h2>
+            <div id="cropper-container" class="flex-1 min-h-0 rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-700">
+                <img id="cropper-image" src="" alt="Cortar">
+            </div>
+            <div class="mt-4 flex justify-end space-x-3 shrink-0">
+                <button type="button" id="cancel-crop-btn" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
+                <button type="button" id="confirm-crop-btn" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer">✂️ Confirmar Recorte</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Editar Pedido -->
+    <div id="edit-order-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content w-full max-w-lg">
+            <h2 class="text-2xl font-bold mb-4">Editar Pedido</h2>
+            <form id="edit-order-form">
+                <input type="hidden" id="edit-order-id">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Nome</label>
+                    <input type="text" id="edit-order-employeeName" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-gray-100 dark:bg-zinc-800 font-bold transition-colors" readonly>
+                </div>
+                <div id="edit-menu-options" class="space-y-4 max-h-[50vh] overflow-y-auto p-1"></div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:bg-blue-600 transition-colors cursor-pointer">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Editar Funcionário -->
+    <div id="edit-employee-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Editar Funcionário</h2>
+            <form id="edit-employee-form">
+                <div class="mb-4">
+                    <label for="editEmployeeRGF" class="block text-sm font-bold text-gray-700 dark:text-gray-300">RGF</label>
+                    <input type="text" id="editEmployeeRGF" class="mt-1 w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 rounded-lg bg-gray-100 dark:bg-zinc-800 font-bold transition-colors" readonly>
+                </div>
+                <div class="mb-4">
+                    <label for="editEmployeeName" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Nome Completo</label>
+                    <input type="text" id="editEmployeeName" class="mt-1 w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-bold transition-colors" required>
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:bg-blue-600 transition-colors cursor-pointer">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Confirmar Pedido -->
+    <div id="confirmation-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content fade-in">
+            <h2 class="text-2xl font-bold mb-4">Confirme o seu Pedido</h2>
+            <p class="mb-6 text-gray-600 dark:text-gray-400 font-medium">Por favor, revise as suas escolhas antes de enviar.</p>
+            <div id="confirmation-summary" class="space-y-2 mb-8"></div>
+            <div class="flex justify-end space-x-4">
+                <button type="button" id="btn-edit-wizard" class="px-6 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Editar</button>
+                <button id="submitOrder" class="px-6 py-2 bg-green-500 dark:bg-green-600 text-white font-bold rounded-lg hover:bg-green-600 dark:hover:bg-green-500 transition-colors cursor-pointer">Confirmar e Enviar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Admin Login -->
+    <div id="admin-login-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Acesso Administrativo</h2>
+            <form id="admin-login-form">
+                <div class="mb-4">
+                    <label for="adminEmail" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Email</label>
+                    <input type="email" id="adminEmail" placeholder="seu-email@exemplo.com" class="mt-1 w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-medium rounded-lg transition-colors" required>
+                </div>
+                <div class="mb-4">
+                    <label for="adminPassword" class="block text-sm font-bold text-gray-700 dark:text-gray-300">Senha</label>
+                    <input type="password" id="adminPassword" placeholder="Sua senha" class="mt-1 w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-medium rounded-lg transition-colors" required>
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:bg-blue-600 transition-colors cursor-pointer">Entrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Genérico de Confirmação -->
+    <div id="custom-confirm-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content fade-in text-center">
+            <h2 class="text-2xl font-bold mb-4 text-red-500">Atenção</h2>
+            <p id="custom-confirm-message" class="mb-8 text-gray-700 dark:text-gray-300 font-medium"></p>
+            <div class="flex justify-center space-x-4">
+                <button type="button" id="custom-confirm-cancel-btn" class="cancel-modal-btn px-6 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
+                <button type="button" id="custom-confirm-ok-btn" class="px-6 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors cursor-pointer">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Elemento base do Toast -->
+    <div id="app-toast"></div>
+    <!-- ===== Modulos do app v2 (JS classico, sem imports ES) ===== -->
+    <script src="js/config.js"></script>
+    <script src="js/firebase.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/order.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

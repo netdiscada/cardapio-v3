@@ -1,0 +1,8 @@
+# Node
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# Scripts auxiliares que não vão pro site
+gen_config.py
