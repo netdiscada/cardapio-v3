@@ -252,24 +252,35 @@
 
     const menuImage = document.getElementById('menu-image');
     const menuLoading = document.getElementById('menu-image-loading');
+    let imageChanged = null;
 
     if (menuImage) {
       if (st.weeklyMenu.menuImageBase64) {
+        imageChanged = menuImage.src !== st.weeklyMenu.menuImageBase64;
         menuImage.classList.add('opacity-0');
         menuLoading.classList.remove('hidden');
-        if (menuImage.src === st.weeklyMenu.menuImageBase64) {
-          setTimeout(global.handleImageLoad, 50);
-        } else {
+        if (imageChanged) {
           menuImage.src = st.weeklyMenu.menuImageBase64;
+        } else {
+          setTimeout(global.handleImageLoad, 50);
         }
-        st.currentDayIndex = 0;
-        st.userChoices = [];
-        renderWizardStep(0);
+        // v3.1: só reinicia a seleção se o cardápio realmente mudou.
+        // Snapshot sem mudança de imagem NÃO pode apagar/reexibir as escolhas.
+        if (imageChanged || st.userChoices.length === 0) {
+          st.currentDayIndex = 0;
+          st.userChoices = [];
+          // O wizard fica OCULTO aqui; validateForm()/checkExistingOrder()
+          // só o exibem depois de confirmar que não há pedido existente.
+          // (elimina o "flash" da seleção reaparecendo por segundos)
+          const wizardContainer = document.getElementById('order-wizard-container');
+          if (wizardContainer) wizardContainer.classList.add('hidden');
+        }
       } else {
         menuImage.src = '';
         menuLoading.classList.add('hidden');
       }
     }
+    if (imageChanged !== null) st.menuImageChanged = imageChanged;
     validateForm();
   }
 

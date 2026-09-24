@@ -84,9 +84,14 @@
       }
       existingContainer.classList.add('hidden');
       publicReportBtnContainer.classList.add('hidden');
-      st.currentDayIndex = 0;
-      st.userChoices = [];
-      renderWizardStep(0);
+      // v3.1: se a imagem do cardápio não mudou e o usuário já está escolhendo,
+      // NÃO zera as escolhas nem volta pro passo 0 (fix do bug visual).
+      const stImgChanged = st.menuImageChanged;
+      if (stImgChanged || st.userChoices.length === 0) {
+        st.currentDayIndex = 0;
+        st.userChoices = [];
+      }
+      renderWizardStep(st.currentDayIndex);
       wizardContainer.classList.remove('hidden');
       submitBtnContainer.classList.add('hidden');
     } catch (error) { console.error(error); }

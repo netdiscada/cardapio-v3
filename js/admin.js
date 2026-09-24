@@ -414,12 +414,13 @@
     const calendarContainer = document.getElementById('holidayCalendar');
     if (!calendarContainer) return;
     // dayIds EXATOS como getDayId() gera: "Segunda-feira" -> "segundafeira"
-    const dayIds = ['domingo', 'segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira', 'sabado'];
-    const dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    // v3.1: sem domingo/sabado (a empresa nao trabalha nesses dias)
+    const dayIds = ['segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira'];
+    const dayLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
     const dates = getNextWeekDates();
-    // Remove dias antigos (mantém os 7 cabeçalhos Dom..Sáb)
+    // Remove dias antigos (mantém os 5 cabeçalhos Seg..Sex)
     calendarContainer.querySelectorAll('[data-day-id]').forEach(el => el.remove());
-    dates.forEach((date, i) => {
+    dates.slice(1, 6).forEach((date, i) => {
       const dayId = dayIds[i];
       const dayEl = document.createElement('button');
       dayEl.type = 'button';
@@ -487,7 +488,7 @@
     
     // Botões de seleção rápida
     const selectWeekdaysBtn = document.getElementById('selectWeekdays');
-    const selectWeekendBtn = document.getElementById('selectWeekend');
+    const clearHolidaysBtn = document.getElementById('clearHolidaysBtn');
     
     if (selectWeekdaysBtn) {
       selectWeekdaysBtn.addEventListener('click', () => {
@@ -497,10 +498,10 @@
       });
     }
     
-    if (selectWeekendBtn) {
-      selectWeekendBtn.addEventListener('click', () => {
+    if (clearHolidaysBtn) {
+      clearHolidaysBtn.addEventListener('click', () => {
         const st = S();
-        st.currentMenuData.nextHolidays = ['domingo', 'sabado'];
+        st.currentMenuData.nextHolidays = [];
         renderHolidayCalendar();
       });
     }
