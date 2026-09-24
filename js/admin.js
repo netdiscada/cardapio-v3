@@ -119,7 +119,20 @@
       st.allOrders = Array.from(targetMap.values()).map(item => item.doc).sort((a, b) => a.data().employeeName.localeCompare(b.data().employeeName));
       renderOrdersTable(st.allOrders);
       renderOrderStatus(st.allOrders);
+      updateOrdersBadge(st.allOrders.length);
     }, (error) => { showToast("Erro ao carregar dados.", 'error'); });
+  }
+
+  // ===== v3.2: Badge de contagem de pedidos na aba Pedidos =====
+  function updateOrdersBadge(count) {
+    const badge = document.getElementById('ordersBadge');
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
   }
 
   // ===== CRUD de Funcionarios =====
@@ -543,6 +556,150 @@
     });
   }
 
+  // ===== v3.2: Consulta RGF no portal da transparencia de Mogi das Cruzes =====
+  const PREFEITURA_API = "https://dadosadm.mogidascruzes.sp.gov.br/api";
+
+  function fmtMoney(v) {
+    const n = parseFloat(String(v).replace(',', '.'));
+    if (isNaN(n)) return '—';
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+  function fmtDateBR(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR');
+  }
+  const MES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+  function rgfSetStatus(msg, type) {
+    const el = document.getElementById('rgf-consult-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'mb-4 text-sm font-semibold ' + (type === 'error' ? 'text-red-600 dark:text-red-400'
+      : type === 'loading' ? 'text-blue-600 dark:text-blue-400'
+      : 'text-green-600 dark:text-green-400');
+  }
+
+  function rgfRenderResult(latest, folhas) {
+    const resultEl = document.getElementById('rgf-consult-result');
+    if (!resultEl) return;
+    const situacaoBadge = latest.situacao === 'Ativo'
+      ? '<span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Ativo</span>'
+      : `<span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">${latest.situacao || 'Inativo'}</span>`;
+
+    // Cartao principal
+    resultEl.innerHTML = `
+      <div class="rounded-xl border border-gray-200 dark:border-zinc-700 overflow-hidden">
+        <div class="bg-blue-600 dark:bg-blue-500 px-5 py-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p class="text-white/80 text-xs font-semibold uppercase tracking-wide">Matrícula ${latest.matricula}</p>
+              <h3 class="text-xl font-bold text-white leading-tight">${latest.nome}</h3>
+            </div>
+            ${situacaoBadge}
+          </div>
+        </div>
+        <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 bg-white dark:bg-zinc-900">
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Função</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${latest.cargo || '—'}</p></div>
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Local de Trabalho</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${latest.localtrabalho || '—'}</p></div>
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Secretaria</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${latest.secretaria || '—'}</p></div>
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Tipo de Contrato</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${latest.tipocontrato || '—'}</p></div>
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Admissão</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${fmtDateBR(latest.dataadmissao)}</p></div>
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Horas Semanais</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${latest.horas_semanais ? latest.horas_semanais.replace('.', ',') + 'h' : '—'}</p></div>
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Salário Base</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${fmtMoney(latest.salariobase)}</p></div>
+          <div><p class="text-xs font-bold text-gray-400 uppercase">Última competência</p><p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano || '—'} · ${latest.tipo_folha || ''}</p></div>
+        </div>
+      </div>`;
+
+    // Cartao do contracheque (folha detalhada) + resumo da competencia
+    if (folhas.length > 0) {
+      const f = folhas[0];
+      const rendimentos = f.results.filter(v => v.tipoVerba === 'Rendimentos');
+      const descontos = f.results.filter(v => v.tipoVerba === 'Descontos');
+      const totalRend = rendimentos.reduce((s, v) => s + Math.abs(parseFloat(v.valorverba)), 0);
+      const totalDesc = descontos.reduce((s, v) => s + Math.abs(parseFloat(v.valorverba)), 0);
+      const liquido = totalRend - totalDesc;
+      const verbaRow = (v) => `
+        <div class="flex justify-between items-center gap-2 py-1.5 border-b border-gray-100 dark:border-zinc-800">
+          <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">${v.desnoverba}</span>
+          <span class="text-sm font-bold ${v.tipoVerba === 'Rendimentos' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'} whitespace-nowrap">${v.tipoVerba === 'Rendimentos' ? '+' : '−'} ${fmtMoney(Math.abs(parseFloat(v.valorverba)))}</span>
+        </div>`;
+      resultEl.innerHTML += `
+        <div class="rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5">
+          <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+            <h4 class="font-bold text-gray-800 dark:text-gray-100">Contracheque — ${MES_ABREV[(f.mes || latest.mes || 1) - 1]}/${f.ano || latest.ano}</h4>
+            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">fonte: portal da transparência</span>
+          </div>
+          <p class="text-xs font-bold text-gray-400 uppercase mb-1">Rendimentos</p>
+          ${rendimentos.map(verbaRow).join('')}
+          <p class="text-xs font-bold text-gray-400 uppercase mt-4 mb-1">Descontos</p>
+          ${descontos.map(verbaRow).join('')}
+          <div class="mt-4 pt-3 border-t-2 border-gray-200 dark:border-zinc-700 grid grid-cols-3 gap-2 text-center">
+            <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Bruto</p><p class="font-bold text-green-700 dark:text-green-400 text-sm">${fmtMoney(totalRend)}</p></div>
+            <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Descontos</p><p class="font-bold text-red-600 dark:text-red-400 text-sm">${fmtMoney(totalDesc)}</p></div>
+            <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Líquido</p><p class="font-bold text-blue-700 dark:text-blue-400 text-sm text-base">${fmtMoney(liquido)}</p></div>
+          </div>
+        </div>`;
+    }
+  }
+
+  async function handleRgfConsult(e) {
+    e.preventDefault();
+    const input = document.getElementById('rgf-consult-input');
+    const resultEl = document.getElementById('rgf-consult-result');
+    const btn = document.getElementById('rgf-consult-btn');
+    if (!input || !resultEl) return;
+    const rgf = input.value.trim().replace(/\D/g, '');
+    if (!rgf) { rgfSetStatus('Digite um RGF para consultar.', 'error'); return; }
+
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Consultando...';
+    resultEl.innerHTML = '';
+    rgfSetStatus('Consultando RGF ' + rgf + '...', 'loading');
+    try {
+      // 1) Busca todas as folhas do RGF (mensal + 13o + adiantamentos)
+      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}`);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      if (!data.results || data.results.length === 0) {
+        rgfSetStatus('Nenhum registro encontrado para o RGF ' + rgf + '.', 'error');
+        return;
+      }
+      // 2) Mais recente: prioriza 'Folha de Pagamento Mensal', senao o mais novo
+      const mensais = data.results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
+      const pool = mensais.length > 0 ? mensais : data.results;
+      const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
+      rgfSetStatus(`${latest.nome} — ${pool.length} competência(s) encontrada(s).`, 'success');
+
+      // 3) Contracheque detalhado do mes mais recente
+      let folhas = [];
+      try {
+        const respF = await fetch(`${PREFEITURA_API}/detalhe_folha?idfunselec=${latest.idfunselec}`);
+        if (respF.ok) {
+          const fd = await respF.json();
+          if (fd.results && fd.results.length > 0) {
+            folhas = [{ results: fd.results, mes: latest.mes, ano: latest.ano }];
+          }
+        }
+      } catch (_) { /* contracheque opcional */ }
+
+      rgfRenderResult(latest, folhas);
+    } catch (err) {
+      rgfSetStatus('Erro na consulta: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  function bindRgfConsultHandler() {
+    const form = document.getElementById('rgf-consult-form');
+    if (!form) return;
+    form.addEventListener('submit', handleRgfConsult);
+    // Enter tambem dispara via submit; consulta ao clicar fora (blur) NAO, para evitar consultas acidentais
+  }
+
   global.loadAndDisplayMenu = loadAndDisplayMenu;
   global.loadAdminData = loadAdminData;
   global.loadAndRenderEmployees = loadAndRenderEmployees;
@@ -558,4 +715,5 @@
   global.bindHolidayCalendarHandlers = bindHolidayCalendarHandlers;
   global.bindEmployeeSearchHandler = bindEmployeeSearchHandler;
   global.renderHolidayCheckboxes = renderHolidayCheckboxes;
+  global.bindRgfConsultHandler = bindRgfConsultHandler;
 })(window);

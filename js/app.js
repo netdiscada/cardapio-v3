@@ -405,6 +405,7 @@
     // ===== v3: Handlers do calendario interativo + busca de funcionarios =====
     if (global.bindHolidayCalendarHandlers) global.bindHolidayCalendarHandlers();
     if (global.bindEmployeeSearchHandler) global.bindEmployeeSearchHandler();
+    if (global.bindRgfConsultHandler) global.bindRgfConsultHandler();
 
     // ===== v3: Toggle do formulario de adicionar funcionario =====
     const toggleAddEmployeeFormBtn = document.getElementById('toggleAddEmployeeForm');
