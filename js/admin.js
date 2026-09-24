@@ -121,6 +121,11 @@
       renderOrderStatus(st.allOrders);
       updateOrdersBadge(st.allOrders.length);
     }, (error) => { showToast("Erro ao carregar dados.", 'error'); });
+
+    // Agenda verificação diária "Todos já escolheram" para admin
+    if (global.scheduleDailyAllOrderedCheck) {
+      global.scheduleDailyAllOrderedCheck();
+    }
   }
 
   // ===== v3.2: Badge de contagem de pedidos na aba Pedidos =====

@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/notify.js", "use": "@vercel/node" }
+  ]
+}

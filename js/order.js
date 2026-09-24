@@ -199,6 +199,10 @@
         await orderPromise;
         document.getElementById('success-text').textContent = `Obrigado, ${st.tempOrderData.employeeName}. O seu pedido foi registado com sucesso.`;
         showToast("Pedido enviado com sucesso!", 'success');
+        // Dispara notificação push para admin se for pedido antecipado
+        if (st.viewingNextWeek && global.triggerNewOrderNotification) {
+          global.triggerNewOrderNotification({ ...st.tempOrderData, id: 'local-' + Date.now() });
+        }
       } else {
         document.getElementById('success-text').textContent = `Obrigado, ${st.tempOrderData.employeeName}. O seu pedido foi salvo no celular e será enviado automaticamente assim que houver internet.`;
         showToast("Salvo offline!", 'info');
