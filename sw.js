@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardapio-cache-v1';
+const CACHE_NAME = 'cardapio-cache-v2';
 
 // Arquivos que devem ser guardados imediatamente na primeira vez que abre
 const STATIC_ASSETS = [

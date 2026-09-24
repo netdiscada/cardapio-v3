@@ -111,6 +111,8 @@
     document.getElementById('admin-view').classList.add('hidden');
     document.getElementById('admin-login-modal').classList.add('hidden');
     document.getElementById('user-view').classList.remove('hidden');
+    // v3.2: bottom bar do funcionario visivel apenas na visao de usuario
+    document.body.classList.add('show-user-tabs');
     const rgfInput = document.getElementById('employeeRGF');
     if (!rgfInput.value && localStorage.getItem('employeeRGF')) { rgfInput.value = localStorage.getItem('employeeRGF'); }
     if (rgfInput.value) { await global.findEmployeeByRGF(rgfInput.value); }
@@ -121,6 +123,8 @@
     const st = S();
     document.getElementById('user-view').classList.add('hidden');
     document.getElementById('admin-view').classList.remove('hidden');
+    // v3.2: esconde a bottom bar do funcionario
+    document.body.classList.remove('show-user-tabs');
     document.getElementById('admin-login-modal').classList.add('hidden');
     localStorage.setItem('currentAppView', 'admin');
     // Foca na Proxima Semana se ela ja existir na hora de abrir o painel

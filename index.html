@@ -180,6 +180,13 @@
         #admin-view:not(.hidden) {
             padding-bottom: 5rem;
         }
+        #user-view:not(.hidden) {
+            padding-bottom: 5rem;
+        }
+        /* Bottom bar do funcionário: controlada por classe no body (show-user-tabs),
+           alternada pelo JS junto com showUserView/showAdminView */
+        #user-tabs { display: none; }
+        body.show-user-tabs #user-tabs { display: flex; }
         /* Guarda contra zoom-out por overflow horizontal: conteúdo ADM nunca
            pode ultrapassar a largura da tela (corta em vez de alargar a página) */
         #admin-view section, #admin-view section > * { max-width: 100%; }
@@ -293,6 +300,68 @@
                 <p id="success-text" class="mt-4 text-gray-600 dark:text-gray-400 font-medium"></p>
                 <button onclick="location.reload()" class="mt-6 bg-blue-600 dark:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer">Retornar ao Início</button>
             </div>
+
+            <!-- ===== ABA FERIADOS (funcionário) ===== -->
+            <section id="user-holidays-section" data-user-panel="holidays" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">📅 Feriados e Pontos Facultativos 2026</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Calendário administrativo oficial de Mogi das Cruzes.</p>
+                <div id="user-holidays-list" class="space-y-1.5"></div>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
+            </section>
+
+            <!-- ===== ABA PAGAMENTO (funcionário) ===== -->
+            <section id="user-payment-section" data-user-panel="payment" class="hidden transition-colors">
+                <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">💰 Dias de Pagamento 2026</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Escala oficial de pagamento e adiantamento.</p>
+                    <div id="user-next-payment" class="hidden rounded-xl p-4 mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/50 text-center"></div>
+                    <div id="user-payment-table" class="space-y-1.5"></div>
+                    <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-3 text-right">fonte: prefeitura de Mogi das Cruzes</p>
+                </div>
+
+                <!-- Consulta RGF (contracheque público) -->
+                <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border border-gray-100 dark:border-zinc-800">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">🔍 Consultar Contracheque por RGF</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Dados públicos do portal da transparência de Mogi das Cruzes.</p>
+                    <form id="user-rgf-consult-form" class="flex flex-wrap gap-2 mb-4">
+                        <input type="text" id="user-rgf-consult-input" inputmode="numeric" placeholder="Digite o RGF (ex: 22823)" class="flex-1 min-w-0 basis-40 px-4 py-2.5 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold transition-colors">
+                        <button type="submit" id="user-rgf-consult-btn" class="px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer whitespace-nowrap">Consultar</button>
+                    </form>
+                    <div id="user-rgf-consult-status" class="hidden mb-4 text-sm font-semibold"></div>
+                    <div id="user-rgf-consult-result" class="space-y-4"></div>
+                </div>
+            </section>
+
+            <!-- ===== ABA PONTO (funcionário) ===== -->
+            <section id="user-ponto-section" data-user-panel="ponto" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors text-center">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">🕐 Folha de Ponto</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Sistema oficial de registro e requerimentos (abonar faltas, justificativas).</p>
+                <a href="https://mogidascruzes.izeus.com.br/ponto" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-blue-600 dark:bg-blue-500 text-white font-bold text-lg px-8 py-4 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 shadow-md transition-transform transform active:scale-95 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5 0L21 3m-4.5 0H21v4.5"></path></svg>
+                    Abrir Folha de Ponto
+                </a>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-4">Abre o site oficial da prefeitura — o login é feito lá, com a sua matrícula.</p>
+            </section>
+
+            <!-- ===== BOTTOM BAR DO FUNCIONÁRIO (Sem rolagem) ===== -->
+            <nav id="user-tabs" class="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shadow-lg p-1.5 no-print" aria-label="Seções do funcionário">
+                <button type="button" data-user-tab="menu" class="admin-tab-btn active">
+                    <span class="text-lg leading-none">🍽️</span>
+                    <span>Cardápio</span>
+                </button>
+                <button type="button" data-user-tab="holidays" class="admin-tab-btn">
+                    <span class="text-lg leading-none">📅</span>
+                    <span>Feriados</span>
+                </button>
+                <button type="button" data-user-tab="payment" class="admin-tab-btn">
+                    <span class="text-lg leading-none">💰</span>
+                    <span>Pagamento</span>
+                </button>
+                <button type="button" data-user-tab="ponto" class="admin-tab-btn">
+                    <span class="text-lg leading-none">🕐</span>
+                    <span>Ponto</span>
+                </button>
+            </nav>
         </div>
 
         <!-- ================= VISÃO DO ADMINISTRADOR ================= -->
@@ -632,6 +701,7 @@
     <script src="js/ui.js"></script>
     <script src="js/order.js"></script>
     <script src="js/admin.js"></script>
+    <script src="js/userhelp.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

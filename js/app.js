@@ -406,6 +406,7 @@
     if (global.bindHolidayCalendarHandlers) global.bindHolidayCalendarHandlers();
     if (global.bindEmployeeSearchHandler) global.bindEmployeeSearchHandler();
     if (global.bindRgfConsultHandler) global.bindRgfConsultHandler();
+    if (global.initUserHelp) global.initUserHelp();
 
     // ===== v3: Toggle do formulario de adicionar funcionario =====
     const toggleAddEmployeeFormBtn = document.getElementById('toggleAddEmployeeForm');
