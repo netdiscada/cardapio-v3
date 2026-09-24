@@ -293,9 +293,6 @@
   // MAIN — wiring de TODOS os listeners (equivale ao main() do v1.x)
   // =====================================================================
   function main() {
-    document.getElementById('btn-current-week').addEventListener('click', () => { global.__state.viewingNextWeek = false; updateUserViewUI(); });
-    document.getElementById('btn-next-week').addEventListener('click', () => { global.__state.viewingNextWeek = true; updateUserViewUI(); });
-
     document.getElementById('admin-view-current').addEventListener('click', () => setAdminTab(false));
     document.getElementById('admin-view-next').addEventListener('click', () => setAdminTab(true));
 

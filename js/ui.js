@@ -220,35 +220,21 @@
     document.getElementById('edit-order-modal').classList.remove('hidden');
   }
 
-  // ===== Atualiza a view do usuario (imagem + wizard + botoes de semana) =====
+  // ===== Atualiza a view do usuario (imagem + badge de semana) =====
   function updateUserViewUI() {
     const st = S();
-    const btnCurrent = document.getElementById('btn-current-week');
-    const btnNext = document.getElementById('btn-next-week');
+    const badgeText = document.getElementById('week-badge-text');
+    const badgeContainer = document.getElementById('week-badge-indicator');
 
-    if (btnCurrent && btnNext) {
+    if (badgeText && badgeContainer) {
       if (st.viewingNextWeek) {
-        btnNext.classList.replace('bg-gray-100', 'bg-orange-500');
-        btnNext.classList.replace('dark:bg-zinc-800', 'bg-orange-500');
-        btnNext.classList.replace('text-gray-700', 'text-white');
-        btnNext.classList.replace('dark:text-gray-300', 'text-white');
-
-        btnCurrent.classList.replace('bg-orange-500', 'bg-gray-100');
-        btnCurrent.classList.replace('text-white', 'text-gray-700');
-        btnCurrent.classList.add('dark:bg-zinc-800', 'dark:text-gray-300');
-
+        badgeText.textContent = 'Cardápio Antecipado (Próxima Semana)';
+        badgeContainer.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 transition-colors';
         st.weeklyMenu.menuImageBase64 = st.currentMenuData.nextMenuImageBase64;
         st.userActiveHolidays = st.currentMenuData.nextHolidays || [];
       } else {
-        btnCurrent.classList.replace('bg-gray-100', 'bg-orange-500');
-        btnCurrent.classList.replace('dark:bg-zinc-800', 'bg-orange-500');
-        btnCurrent.classList.replace('text-gray-700', 'text-white');
-        btnCurrent.classList.replace('dark:text-gray-300', 'text-white');
-
-        btnNext.classList.replace('bg-orange-500', 'bg-gray-100');
-        btnNext.classList.replace('text-white', 'text-gray-700');
-        btnNext.classList.add('dark:bg-zinc-800', 'dark:text-gray-300');
-
+        badgeText.textContent = 'Cardápio da Semana Atual';
+        badgeContainer.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors';
         st.weeklyMenu.menuImageBase64 = st.currentMenuData.menuImageBase64;
         st.userActiveHolidays = st.currentMenuData.holidays || [];
       }

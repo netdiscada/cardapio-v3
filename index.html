@@ -227,11 +227,9 @@
                 <div class="text-center mb-6 mt-4">
                     <h1 class="text-4xl text-blue-600 dark:text-blue-500 drop-shadow-sm" style="font-family: 'Lobster Two', cursive;">Delícias Urbanas</h1>
                     <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
-                </div>
-
-                <div id="week-toggle-container" class="hidden mb-4 bg-white dark:bg-zinc-900 p-1 rounded-xl shadow-sm flex flex-col sm:flex-row gap-1 border border-gray-100 dark:border-zinc-800 fade-in">
-                    <button id="btn-current-week" class="flex-1 px-2 py-2 bg-blue-600 text-white rounded-lg font-bold shadow transition-colors text-sm">🍲 Desta Semana</button>
-                    <button id="btn-next-week" class="flex-1 px-2 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg font-bold transition-colors border border-gray-200 dark:border-zinc-700 text-sm">📅 Cardápio da Próxima Semana</button>
+                    <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
+                        <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
+                    </div>
                 </div>
 
                 <!-- Autenticação do Usuário via RGF -->
