@@ -414,6 +414,38 @@
         form.classList.toggle('hidden');
       });
     }
+
+    // ===== v3: Abas do painel ADM (Sidebar/TabBar) =====
+    const adminTabsNav = document.getElementById('admin-tabs');
+    if (adminTabsNav) {
+      const panelIds = { menu: 'menu-management-section', employees: 'employee-management-section', orders: 'order-status-section' };
+      const extraOrderPanel = document.getElementById('orders-section');
+
+      const showPanel = (name) => {
+        // Esconde/mostra painéis conforme a aba ativa
+        document.querySelectorAll('#admin-view section[data-admin-panel]').forEach(sec => {
+          sec.classList.toggle('hidden', sec.dataset.adminPanel !== name);
+        });
+        // Atualiza botões
+        document.querySelectorAll('#admin-tabs .admin-tab-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.adminTab === name);
+        });
+        // O botão FAB de PDF só faz sentido na aba de pedidos
+        const fab = document.getElementById('generateReportBtn');
+        if (fab) fab.classList.toggle('hidden', name !== 'orders');
+        // Guarda a aba ativa
+        global.__state.adminActiveTab = name;
+      };
+
+      adminTabsNav.addEventListener('click', (e) => {
+        const btn = e.target.closest('.admin-tab-btn');
+        if (!btn) return;
+        showPanel(btn.dataset.adminTab);
+      });
+
+      // Aba inicial (ou última usada)
+      showPanel(global.__state.adminActiveTab || 'menu');
+    }
   }
 
   // =====================================================================
