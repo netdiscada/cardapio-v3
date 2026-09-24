@@ -1,4 +1,4 @@
-// Cardapio Quatinga v2 - ui.js
+// Cardapio Quatinga v3 - ui.js
 // Helpers de UI: showToast, showCustomConfirm, dark-mode, wizard, holidays,
 // showUserView/showAdminView/updateUserViewUI, renderOrdersTable, openEditOrderModal,
 // renderOrderStatus, setAdminTab, handleImageLoad.
@@ -87,7 +87,7 @@
     }
   }
 
-  // ===== Feriados =====
+  // ===== Feriados (legado - checkboxes) =====
   function renderHolidayCheckboxes() {
     const st = S();
     const container = document.getElementById('holiday-selector');

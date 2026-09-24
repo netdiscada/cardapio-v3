@@ -1,7 +1,8 @@
-// Cardapio Quatinga v2 - app.js
+// Cardapio Quatinga v3 - app.js
 // Bootstrap/orquestracao: estado global compartilhado, setupPWA, upload/cropper de
-// imagem do cardapio, status online/offline, e wiring de TODOS os event listeners
-// (main). Carregado por ULTIMO no index.html. Escopo global via window.
+// imagem do cardapio (v3: drag-and-drop + preview), calendario interativo de
+// feriados, busca de funcionarios, status online/offline, e wiring de TODOS os
+// event listeners (main). Carregado por ULTIMO no index.html. Escopo global via window.
 
 (function (global) {
   const fb = global.fb;
@@ -45,7 +46,7 @@
         background_color: "#000000",
         theme_color: "#2563eb",
         icons: [{
-          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232563eb' rx='20'/%3E%3Ctext x='50' y='65' font-size='60' text-anchor='middle' fill='white'%3E🍲%3C/text%3E%3C/svg%3E",
+          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232563eb' rx='20'/%3E%3Ctext x='50' y='65' font-size='60' text-anchor='middle' fill='white'%3E%F0%9F%8D%B2%3C/text%3E%3C/svg%3E",
           sizes: "192x192",
           type: "image/svg+xml",
           purpose: "any maskable"
@@ -64,14 +65,33 @@
   setupPWA();
 
   // =====================================================================
-  // Upload de imagem + cropper (port fiel) + compressao + save no Firestore
+  // v3: Upload de imagem com drag-and-drop (dropArea) + preview com info
   // =====================================================================
   function bindImageUploadHandlers() {
     const st = global.__state;
+    const dropArea = document.getElementById('dropArea');
+    const resetBtn = document.getElementById('resetUpload');
+    const cropBtn = document.getElementById('cropImageBtn');
 
-    document.getElementById('imageUpload').addEventListener('change', function (event) {
-      const file = event.target.files[0];
+    // Input file invisível reutilizável (suporta clique na dropArea)
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/jpeg,image/png,image/jpg,image/webp';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
+    function handleFileSelection(file) {
       if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast("Arquivo inválido. Envie uma imagem (JPG/PNG).", "error");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("Imagem muito grande (máx 5MB).", "error");
+        return;
+      }
+      const feedback = document.getElementById('uploadFeedback');
+      if (feedback) feedback.textContent = `Processando: ${file.name}...`;
       const reader = new FileReader();
       reader.onload = (e) => {
         const cropperImage = document.getElementById('cropper-image');
@@ -82,13 +102,72 @@
           viewMode: 1, dragMode: 'move', autoCropArea: 0.95, restore: false, guides: true,
           center: true, highlight: false, cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false,
         });
+        if (feedback) feedback.textContent = '';
       };
       reader.readAsDataURL(file);
+    }
+
+    if (dropArea) {
+      dropArea.addEventListener('click', () => fileInput.click());
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropArea.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+        });
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropArea.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+        });
+      });
+      dropArea.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) handleFileSelection(files[0]);
+      });
+    }
+
+    fileInput.addEventListener('change', function (event) {
+      if (event.target.files && event.target.files[0]) {
+        handleFileSelection(event.target.files[0]);
+      }
     });
 
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        st.finalImageBase64 = null;
+        fileInput.value = '';
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        if (previewContainer) previewContainer.classList.add('hidden');
+        const uploadBtn = document.getElementById('uploadImageBtn');
+        if (uploadBtn) uploadBtn.disabled = true;
+        showToast("Upload redefinido.", "info");
+      });
+    }
+
+    if (cropBtn) {
+      cropBtn.addEventListener('click', () => {
+        if (!st.finalImageBase64) {
+          showToast("Confirme o recorte da imagem atual primeiro.", "info");
+          return;
+        }
+        const cropperImage = document.getElementById('cropper-image');
+        cropperImage.src = st.finalImageBase64;
+        document.getElementById('cropper-modal').classList.remove('hidden');
+        if (st.cropperInstance) st.cropperInstance.destroy();
+        st.cropperInstance = new Cropper(cropperImage, {
+          viewMode: 1, dragMode: 'move', autoCropArea: 0.95, restore: false, guides: true,
+          center: true, highlight: false, cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false,
+        });
+      });
+    }
+
+    // ===== Cancel/Confirm do cropper =====
     document.getElementById('cancel-crop-btn').addEventListener('click', () => {
       document.getElementById('cropper-modal').classList.add('hidden');
-      document.getElementById('imageUpload').value = '';
       st.finalImageBase64 = null;
       if (st.cropperInstance) { st.cropperInstance.destroy(); st.cropperInstance = null; }
     });
@@ -111,8 +190,15 @@
             reader.readAsDataURL(compressedBlob);
             reader.onloadend = () => {
               st.finalImageBase64 = reader.result;
-              document.getElementById('imagePreview').src = st.finalImageBase64;
-              document.getElementById('imagePreview').classList.remove('hidden');
+              // Preview v3
+              const preview = document.getElementById('imagePreview');
+              const previewContainer = document.getElementById('imagePreviewContainer');
+              if (preview) preview.src = st.finalImageBase64;
+              if (previewContainer) previewContainer.classList.remove('hidden');
+              const dimEl = document.getElementById('imageDimensions');
+              const sizeEl = document.getElementById('imageSize');
+              if (dimEl) dimEl.textContent = `${canvas.width} x ${canvas.height}px`;
+              if (sizeEl) sizeEl.textContent = `${(compressedBlob.size / 1024).toFixed(0)} KB`;
               document.getElementById('uploadImageBtn').disabled = false;
               document.getElementById('cropper-modal').classList.add('hidden');
               st.cropperInstance.destroy(); st.cropperInstance = null;
@@ -123,13 +209,20 @@
       } catch (err) { showToast("Erro ao processar imagem.", "error"); btn.disabled = false; btn.textContent = originalText; }
     });
 
+    // ===== Salvar cardapio da proxima semana =====
     document.getElementById('uploadImageBtn').addEventListener('click', async () => {
       const uploadBtn = document.getElementById('uploadImageBtn');
       try {
         if (!auth.currentUser) { showToast("Sessão expirada. Recarregue a página.", "error"); return; }
         if (!st.finalImageBase64) { showToast("Você precisa selecionar e recortar uma imagem primeiro.", "error"); return; }
         uploadBtn.disabled = true; uploadBtn.innerHTML = "⏳ Salvando no banco de dados...";
-        const selectedHolidays = Array.from(document.querySelectorAll('.holiday-checkbox:checked')).map(cb => cb.value);
+        // v3: feriados vem do calendario interativo (currentMenuData.nextHolidays)
+        let selectedHolidays = [];
+        if (st.currentMenuData && Array.isArray(st.currentMenuData.nextHolidays)) {
+          selectedHolidays = st.currentMenuData.nextHolidays;
+        } else {
+          selectedHolidays = Array.from(document.querySelectorAll('.holiday-checkbox:checked')).map(cb => cb.value);
+        }
         const now = new Date();
         let daysUntilMonday = (1 + 7 - now.getDay()) % 7;
         if (daysUntilMonday === 0) daysUntilMonday = 7;
@@ -138,7 +231,6 @@
         await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime() }, { merge: true });
         showToast("Cardápio da Próxima Semana salvo e disponível!", "success");
         document.getElementById('whatsapp-notification-container').classList.remove('hidden');
-        document.getElementById('imageUpload').value = '';
         st.finalImageBase64 = null; uploadBtn.innerHTML = "✅ Salvo com sucesso!";
       } catch (error) {
         uploadBtn.disabled = false; uploadBtn.textContent = "Tentar Salvar Novamente";
@@ -162,7 +254,6 @@
 
   // =====================================================================
   // NOTIFICACOES PUSH (Capacitor). So roda dentro do APK; no PWA ignora.
-  // Pede permissao e registra o token FCM no Firestore (colecao deviceTokens).
   // =====================================================================
   async function registerDeviceToken() {
     try {
@@ -187,18 +278,14 @@
     if (!window.Capacitor || !Capacitor.isNativePlatform) return;
     const Push = Capacitor.Plugins.PushNotifications;
     if (!Push) return;
-    // Pede permissao ao iniciar (se ainda nao foi concedida)
     Push.requestPermissions().then((perm) => {
       if (perm.receive === 'granted') registerDeviceToken();
     }).catch(() => {});
-    // Se o funcionario digitar o RGF depois do registro, atualiza o token com o RGF
     const rgfEl = document.getElementById('employeeRGF');
     if (rgfEl) rgfEl.addEventListener('change', registerDeviceToken);
-    // Ao receber notificacao em foreground, mostra um alerta discreto
     Push.addListener('pushNotificationReceived', (n) => {
       try { if (n && n.data) showToast(n.title || 'Cardápio Quatinga', 'info', 4000); } catch (e) {}
     });
-    // Ao abrir o app pela notificacao, abre o cardapio (nada especial a fazer)
     Push.addListener('pushNotificationActionPerformed', () => {});
   }
 
@@ -312,9 +399,21 @@
     const menuImage = document.getElementById('menu-image');
     menuImage.addEventListener('click', () => { document.getElementById('zoomed-image').src = menuImage.src; zoomModal.classList.remove('hidden'); });
     zoomModal.addEventListener('click', (e) => {
-      // So fecha se clicar no fundo fora da imagem
       if (e.target === zoomModal) zoomModal.classList.add('hidden');
     });
+
+    // ===== v3: Handlers do calendario interativo + busca de funcionarios =====
+    if (global.bindHolidayCalendarHandlers) global.bindHolidayCalendarHandlers();
+    if (global.bindEmployeeSearchHandler) global.bindEmployeeSearchHandler();
+
+    // ===== v3: Toggle do formulario de adicionar funcionario =====
+    const toggleAddEmployeeFormBtn = document.getElementById('toggleAddEmployeeForm');
+    if (toggleAddEmployeeFormBtn) {
+      toggleAddEmployeeFormBtn.addEventListener('click', () => {
+        const form = document.getElementById('add-employee-form');
+        form.classList.toggle('hidden');
+      });
+    }
   }
 
   // =====================================================================
@@ -334,6 +433,6 @@
   // ===== Notificacoes Push (FCM via Capacitor) — roda somente no APK =====
   setupPushNotifications();
 
-  // Dispara o listener de auth (login anonimo / admin) — equivale ao bloco auth() do v1.x
+  // Dispara o listener de auth (login anonimo / admin)
   setupAuthStateListener();
 })(window);

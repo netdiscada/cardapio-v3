@@ -1,4 +1,4 @@
-// Cardapio Quatinga v2 - admin.js
+// Cardapio Quatinga v3 - admin.js
 // Painel admin: loadAndDisplayMenu, loadAdminData, upload/cropper de imagem
 // (cropperjs + browser-image-compression), CRUD de employees, geracao de PDF
 // (jsPDF + autotable), WhatsApp, delete de pedido, relatorio publico.
@@ -79,7 +79,12 @@
         } else { scheduledDateSpan.textContent = ''; }
       }
 
+      // Renderiza checkboxes de feriados (para compatibilidade com código legado)
       renderHolidayCheckboxes();
+      
+      // Renderiza calendário interativo de feriados (NOVO v3)
+      renderHolidayCalendar();
+
       global.updateUserViewUI();
     }, (error) => { showToast("Erro ao carregar o cardápio.", 'error'); });
   }
@@ -384,6 +389,159 @@
     window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
   }
 
+  // ===== NOVO v3: Calendário interativo de feriados =====
+  // Mapeia o dia da próxima semana para o calendário: a próxima semana começa
+  // na próxima segunda-feira; a linha do calendário mostra dom->sáb dessa semana.
+  function getNextWeekDates() {
+    const now = new Date();
+    let daysUntilMonday = (1 + 7 - now.getDay()) % 7;
+    if (daysUntilMonday === 0) daysUntilMonday = 7;
+    const nextMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday);
+    nextMonday.setHours(0, 0, 0, 0);
+    // Domingo anterior à segunda (início da grade dom->sáb)
+    const gridStart = new Date(nextMonday);
+    gridStart.setDate(gridStart.getDate() - 1);
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(gridStart);
+      d.setDate(gridStart.getDate() + i);
+      dates.push(d);
+    }
+    return dates;
+  }
+
+  function buildHolidayCalendarGrid() {
+    const calendarContainer = document.getElementById('holidayCalendar');
+    if (!calendarContainer) return;
+    // dayIds EXATOS como getDayId() gera: "Segunda-feira" -> "segundafeira"
+    const dayIds = ['domingo', 'segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira', 'sabado'];
+    const dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const dates = getNextWeekDates();
+    // Remove dias antigos (mantém os 7 cabeçalhos Dom..Sáb)
+    calendarContainer.querySelectorAll('[data-day-id]').forEach(el => el.remove());
+    dates.forEach((date, i) => {
+      const dayId = dayIds[i];
+      const dayEl = document.createElement('button');
+      dayEl.type = 'button';
+      dayEl.dataset.dayId = dayId;
+      dayEl.title = `${dayLabels[i]} ${date.toLocaleDateString('pt-BR')} — clique para marcar/desmarcar feriado`;
+      dayEl.className = 'h-10 w-10 flex items-center justify-center bg-gray-100 dark:bg-zinc-800 rounded text-xs font-bold text-gray-700 dark:text-gray-300 hover:ring-2 hover:ring-red-400 transition';
+      dayEl.textContent = date.getDate();
+      calendarContainer.appendChild(dayEl);
+    });
+    renderHolidayCalendar();
+  }
+
+  function renderHolidayCalendar() {
+    const st = S();
+    const calendarContainer = document.getElementById('holidayCalendar');
+    const countElement = document.getElementById('holidayCount');
+    const savedNextHolidays = st.currentMenuData.nextHolidays || [];
+    
+    if (!calendarContainer) return;
+    
+    // Atualiza contagem
+    if (countElement) {
+      countElement.textContent = `${savedNextHolidays.length} feriado${savedNextHolidays.length !== 1 ? 's' : ''} selecionado${savedNextHolidays.length !== 1 ? 's' : ''}`;
+    }
+    
+    // Atualiza dias do calendário (pula os 7 primeiros elementos que são os cabeçalhos)
+    const dayElements = calendarContainer.querySelectorAll('[data-day-id]');
+    dayElements.forEach(el => {
+      const dayId = el.dataset.dayId;
+      if (savedNextHolidays.includes(dayId)) {
+        el.classList.add('bg-red-500', 'dark:bg-red-600', 'text-white');
+        el.classList.remove('bg-gray-100', 'dark:bg-zinc-800', 'text-gray-700', 'dark:text-gray-300');
+      } else {
+        el.classList.remove('bg-red-500', 'dark:bg-red-600', 'text-white');
+        el.classList.add('bg-gray-100', 'dark:bg-zinc-800', 'text-gray-700', 'dark:text-gray-300');
+      }
+    });
+  }
+
+  function bindHolidayCalendarHandlers() {
+    const calendarContainer = document.getElementById('holidayCalendar');
+    if (!calendarContainer) return;
+    
+    // Constroi a grade de dias na primeira vez
+    buildHolidayCalendarGrid();
+    
+    // Delegação de eventos para os dias do calendário
+    calendarContainer.addEventListener('click', (e) => {
+      const dayEl = e.target.closest('[data-day-id]');
+      if (!dayEl) return;
+      
+      const dayId = dayEl.dataset.dayId;
+      const st = S();
+      if (!Array.isArray(st.currentMenuData.nextHolidays)) st.currentMenuData.nextHolidays = [];
+      const holidays = st.currentMenuData.nextHolidays;
+      const index = holidays.indexOf(dayId);
+      
+      if (index > -1) {
+        holidays.splice(index, 1);
+      } else {
+        holidays.push(dayId);
+      }
+      renderHolidayCalendar();
+    });
+    
+    // Botões de seleção rápida
+    const selectWeekdaysBtn = document.getElementById('selectWeekdays');
+    const selectWeekendBtn = document.getElementById('selectWeekend');
+    
+    if (selectWeekdaysBtn) {
+      selectWeekdaysBtn.addEventListener('click', () => {
+        const st = S();
+        st.currentMenuData.nextHolidays = ['segundafeira', 'tercafeira', 'quartafeira', 'quintafeira', 'sextafeira'];
+        renderHolidayCalendar();
+      });
+    }
+    
+    if (selectWeekendBtn) {
+      selectWeekendBtn.addEventListener('click', () => {
+        const st = S();
+        st.currentMenuData.nextHolidays = ['domingo', 'sabado'];
+        renderHolidayCalendar();
+      });
+    }
+  }
+
+  // ===== NOVO v3: Busca de funcionários em tempo real =====
+  function bindEmployeeSearchHandler() {
+    const searchInput = document.getElementById('employeeSearch');
+    if (!searchInput) return;
+    
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const container = document.getElementById('employee-list-container');
+      const rows = container.querySelectorAll('tbody tr');
+      
+      rows.forEach(row => {
+        const rgf = row.cells[0].textContent.toLowerCase();
+        const nome = row.cells[1].textContent.toLowerCase();
+        if (rgf.includes(searchTerm) || nome.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+  }
+
+  // ===== Checkboxes legados (para compatibilidade) =====
+  function renderHolidayCheckboxes() {
+    const st = S();
+    const container = document.getElementById('holiday-selector');
+    if (!container) return;
+    container.innerHTML = '';
+    const savedNextHolidays = st.currentMenuData.nextHolidays || [];
+    weekDays.forEach(day => {
+      const dayId = getDayId(day);
+      const isChecked = savedNextHolidays.includes(dayId) ? 'checked' : '';
+      container.innerHTML += `<label class="flex items-center space-x-2 cursor-pointer select-none bg-white dark:bg-slate-800 p-2 rounded shadow-sm border border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition"><input type="checkbox" value="${dayId}" class="holiday-checkbox w-5 h-5 text-orange-500 rounded focus:ring-orange-500" ${isChecked}><span class="text-gray-700 dark:text-slate-300 font-bold">${day}</span></label>`;
+    });
+  }
+
   global.loadAndDisplayMenu = loadAndDisplayMenu;
   global.loadAdminData = loadAdminData;
   global.loadAndRenderEmployees = loadAndRenderEmployees;
@@ -395,4 +553,8 @@
   global.openPublicReportModal = openPublicReportModal;
   global.generateAndShareReport = generateAndShareReport;
   global.handleWhatsAppNotification = handleWhatsAppNotification;
+  global.renderHolidayCalendar = renderHolidayCalendar;
+  global.bindHolidayCalendarHandlers = bindHolidayCalendarHandlers;
+  global.bindEmployeeSearchHandler = bindEmployeeSearchHandler;
+  global.renderHolidayCheckboxes = renderHolidayCheckboxes;
 })(window);
