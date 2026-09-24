@@ -156,11 +156,11 @@
         html.dark .admin-tab-btn.active { color: #60a5fa; background-color: rgba(96, 165, 250, 0.15); }
 
         /* Badge de contagem de pedidos na aba Pedidos */
+        .admin-tab-btn { position: relative; }
         .admin-badge {
             position: absolute;
-            top: 0.35rem;
-            right: 50%;
-            margin-right: -2.4rem;
+            top: 0.25rem;
+            right: 0.5rem;
             min-width: 1.15rem;
             height: 1.15rem;
             padding: 0 0.3rem;
@@ -172,6 +172,7 @@
             border-radius: 9999px;
             text-align: center;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
         }
         .admin-badge.hidden { display: none; }
 
@@ -179,6 +180,10 @@
         #admin-view:not(.hidden) {
             padding-bottom: 5rem;
         }
+        /* Guarda contra zoom-out por overflow horizontal: conteúdo ADM nunca
+           pode ultrapassar a largura da tela (corta em vez de alargar a página) */
+        #admin-view section, #admin-view section > * { max-width: 100%; }
+        #rgf-consult-result { overflow-wrap: anywhere; }
         
         @media print {
             .no-print { display: none !important; }
@@ -461,9 +466,9 @@
                 <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-1">🔍 Consulta RGF</h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Dados públicos do portal da transparência de Mogi das Cruzes.</p>
 
-                <form id="rgf-consult-form" class="flex gap-2 mb-4">
-                    <input type="text" id="rgf-consult-input" inputmode="numeric" placeholder="Digite o RGF (ex: 22823)" class="flex-1 px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
-                    <button type="submit" id="rgf-consult-btn" class="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer whitespace-nowrap">Consultar</button>
+                <form id="rgf-consult-form" class="flex flex-wrap gap-2 mb-4">
+                    <input type="text" id="rgf-consult-input" inputmode="numeric" placeholder="Digite o RGF (ex: 22823)" class="flex-1 min-w-0 basis-48 px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
+                    <button type="submit" id="rgf-consult-btn" class="px-5 py-3 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer whitespace-nowrap">Consultar</button>
                 </form>
 
                 <div id="rgf-consult-status" class="hidden mb-4 text-sm font-semibold"></div>

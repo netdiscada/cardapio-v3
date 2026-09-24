@@ -619,6 +619,10 @@
       const totalRend = rendimentos.reduce((s, v) => s + Math.abs(parseFloat(v.valorverba)), 0);
       const totalDesc = descontos.reduce((s, v) => s + Math.abs(parseFloat(v.valorverba)), 0);
       const liquido = totalRend - totalDesc;
+      const temAdiantamento = descontos.some(v => /ADIANTAMENTO/i.test(v.desnoverba));
+      const notaAdiantamento = temAdiantamento
+        ? `<p class="mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium">ℹ️ Inclui desconto de adiantamento salarial (valor pago antecipadamente no mês). O "líquido" acima é o valor final depositado.</p>`
+        : '';
       const verbaRow = (v) => `
         <div class="flex justify-between items-center gap-2 py-1.5 border-b border-gray-100 dark:border-zinc-800">
           <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">${v.desnoverba}</span>
@@ -639,6 +643,7 @@
             <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Descontos</p><p class="font-bold text-red-600 dark:text-red-400 text-sm">${fmtMoney(totalDesc)}</p></div>
             <div><p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Líquido</p><p class="font-bold text-blue-700 dark:text-blue-400 text-sm text-base">${fmtMoney(liquido)}</p></div>
           </div>
+          ${notaAdiantamento}
         </div>`;
     }
   }
@@ -658,19 +663,26 @@
     resultEl.innerHTML = '';
     rgfSetStatus('Consultando RGF ' + rgf + '...', 'loading');
     try {
-      // 1) Busca todas as folhas do RGF (mensal + 13o + adiantamentos)
-      const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}`);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
-      if (!data.results || data.results.length === 0) {
+      // 1) Busca a folha mais recente: percorre anos do atual para tras
+      //    (a API pagina por ordem cronologica crescente; filtrar por ano
+      //     garante que o registro mais novo nunca fique numa pagina oculta)
+      const anoAtual = new Date().getFullYear();
+      let results = [];
+      for (let ano = anoAtual; ano >= anoAtual - 8 && results.length === 0; ano--) {
+        const resp = await fetch(`${PREFEITURA_API}/folha_pagamento?matricula=${rgf}&ano=${ano}`);
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        if (data.results && data.results.length > 0) results = data.results;
+      }
+      if (results.length === 0) {
         rgfSetStatus('Nenhum registro encontrado para o RGF ' + rgf + '.', 'error');
         return;
       }
       // 2) Mais recente: prioriza 'Folha de Pagamento Mensal', senao o mais novo
-      const mensais = data.results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
-      const pool = mensais.length > 0 ? mensais : data.results;
+      const mensais = results.filter(r => r.tipo_folha === 'Folha de Pagamento Mensal');
+      const pool = mensais.length > 0 ? mensais : results;
       const latest = pool.reduce((a, b) => ((b.ano * 12 + b.mes) > (a.ano * 12 + a.mes) ? b : a));
-      rgfSetStatus(`${latest.nome} — ${pool.length} competência(s) encontrada(s).`, 'success');
+      rgfSetStatus(`${latest.nome} — competência ${MES_ABREV[(latest.mes || 1) - 1]}/${latest.ano}.`, 'success');
 
       // 3) Contracheque detalhado do mes mais recente
       let folhas = [];
