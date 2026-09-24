@@ -109,21 +109,55 @@
         #app-toast.error { background-color: #ef4444; }
         #app-toast.info { background-color: #3b82f6; }
 
-        /* ===== Painel ADM: Sidebar (desktop) / Abas (mobile) ===== */
-        .admin-tab-btn { display:flex; align-items:center; gap:.6rem; padding:.7rem 1rem; border-radius:.65rem; font-weight:700; font-size:.875rem; color:#4b5563; background:transparent; border:none; cursor:pointer; white-space:nowrap; transition:background-color .15s ease, color .15s ease; }
-        html.dark .admin-tab-btn { color:#d4d4d8; }
-        .admin-tab-btn:hover { background-color:#eff6ff; color:#1d4ed8; }
-        html.dark .admin-tab-btn:hover { background-color:#18181b; color:#93c5fd; }
-        .admin-tab-btn.active { background-color:#2563eb; color:#ffffff; }
-        .admin-tab-btn.active:hover { background-color:#1d4ed8; color:#ffffff; }
-        html.dark .admin-tab-btn.active { background-color:#3b82f6; }
-        html.dark .admin-tab-btn.active:hover { background-color:#2563eb; }
-        @media (max-width:767px) { .admin-tab-btn { flex:1 1 auto; justify-content:center; padding:.55rem .75rem; font-size:.78rem; } }
-        @media (min-width:768px) {
-            #admin-view:not(.hidden) { display:grid; grid-template-columns:14rem minmax(0,1fr); align-items:start; column-gap:1.5rem; }
-            #admin-view > header, #admin-view > div { grid-column:1 / -1; }
-            #admin-view > nav { grid-column:1; position:sticky; top:1rem; }
-            #admin-view > section { grid-column:2; }
+        /* ===== Painel ADM: Bottom Bar fixa (Sem rolagem) ===== */
+        #admin-tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #e5e7eb;
+            padding: 0.5rem 0.75rem;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+        html.dark #admin-tabs {
+            background-color: rgba(24, 24, 27, 0.95);
+            border-top-color: #27272a;
+        }
+        .admin-tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 0.4rem 0.2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.15s ease, background-color 0.15s ease;
+            gap: 0.15rem;
+            text-align: center;
+        }
+        html.dark .admin-tab-btn { color: #a1a1aa; }
+        .admin-tab-btn:hover { color: #2563eb; background-color: rgba(37, 99, 235, 0.05); }
+        html.dark .admin-tab-btn:hover { color: #60a5fa; background-color: rgba(96, 165, 250, 0.05); }
+        .admin-tab-btn.active { color: #2563eb; background-color: rgba(37, 99, 235, 0.1); font-weight: 700; }
+        html.dark .admin-tab-btn.active { color: #60a5fa; background-color: rgba(96, 165, 250, 0.15); }
+
+        /* Espaçamento inferior no admin-view para o conteúdo não ficar coberto pela barra fixa */
+        #admin-view:not(.hidden) {
+            padding-bottom: 5rem;
         }
         
         @media print {
@@ -249,11 +283,20 @@
                 <button id="switchToUserFromAdmin" class="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">⬅️ Voltar para o Cardápio (Visão Usuário)</button>
             </div>
 
-            <!-- ===== SIDEBAR (desktop) / ABAS (mobile) ===== -->
-            <nav id="admin-tabs" class="mb-6 flex md:flex-col gap-1 bg-white dark:bg-zinc-900 p-2 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm overflow-x-auto md:overflow-visible md:sticky md:top-4" aria-label="Seções do painel">
-                <button type="button" data-admin-tab="menu" class="admin-tab-btn active">🖼️ Cardápio</button>
-                <button type="button" data-admin-tab="employees" class="admin-tab-btn">👥 Funcionários</button>
-                <button type="button" data-admin-tab="orders" class="admin-tab-btn">📋 Pedidos Recebidos</button>
+            <!-- ===== BOTTOM BAR ADM FIXA (Sem rolagem) ===== -->
+            <nav id="admin-tabs" aria-label="Seções do painel">
+                <button type="button" data-admin-tab="menu" class="admin-tab-btn active">
+                    <span class="text-lg leading-none">🖼️</span>
+                    <span>Cardápio</span>
+                </button>
+                <button type="button" data-admin-tab="employees" class="admin-tab-btn">
+                    <span class="text-lg leading-none">👥</span>
+                    <span>Funcionários</span>
+                </button>
+                <button type="button" data-admin-tab="orders" class="admin-tab-btn">
+                    <span class="text-lg leading-none">📋</span>
+                    <span>Pedidos</span>
+                </button>
             </nav>
 
             <!-- Gerenciamento de Cardápio -->
