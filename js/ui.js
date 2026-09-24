@@ -117,6 +117,10 @@
     if (!rgfInput.value && localStorage.getItem('employeeRGF')) { rgfInput.value = localStorage.getItem('employeeRGF'); }
     if (rgfInput.value) { await global.findEmployeeByRGF(rgfInput.value); }
     global.loadAndDisplayMenu();
+    // Inicia checker de notificações para funcionário
+    if (global.startNotificationChecker) {
+      global.startNotificationChecker(false, rgfInput.value, document.getElementById('employeeName').value);
+    }
   }
 
   function showAdminView() {
@@ -131,6 +135,10 @@
     setAdminTab(!!st.currentMenuData.nextMenuImageBase64);
     global.loadAndDisplayMenu();
     global.loadAndRenderEmployees();
+    // Inicia checker de notificações para admin
+    if (global.startNotificationChecker) {
+      global.startNotificationChecker(true, 'admin', 'Admin');
+    }
   }
 
   // ===== Abas admin (semana atual / proxima) =====

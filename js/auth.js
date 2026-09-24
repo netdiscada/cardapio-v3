@@ -45,6 +45,8 @@
       await auth.signOut();
       localStorage.setItem('currentAppView', 'user');
       showToast("Saindo do painel...", 'info');
+      // Para checker de notificações
+      if (global.stopNotificationChecker) global.stopNotificationChecker();
       showUserView();
     } catch (error) { showToast("Erro ao fazer logout.", 'error'); }
   }
