@@ -413,6 +413,10 @@
                     <span>Pedidos</span>
                     <span id="ordersBadge" class="admin-badge hidden">0</span>
                 </button>
+                <button type="button" data-admin-tab="settings" class="admin-tab-btn">
+                    <span class="text-lg leading-none">⚙️</span>
+                    <span>Config.</span>
+                </button>
             </nav>
 
             <!-- Gerenciamento de Cardápio -->
@@ -463,10 +467,10 @@
                                         <span>Dimensões:</span> <span id="imageDimensions">-</span>
                                         <span>Tamanho estimado:</span> <span id="imageSize">-</span>
                                     </div>
-                                    <div class="mt-3 flex gap-2">
+                                    <div class="mt-3 flex flex-wrap gap-2">
                                         <button type="button" id="resetUpload" class="px-3 py-1 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded hover:bg-gray-300 dark:hover:bg-zinc-600">Redefinir</button>
                                         <button type="button" id="cropImageBtn" class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded hover:bg-blue-700 dark:hover:bg-blue-400">Recortar Imagem</button>
-                                        <button type="button" id="ocrImageBtn" class="px-3 py-1 bg-purple-600 dark:bg-purple-500 text-white text-sm rounded hover:bg-purple-700 dark:hover:bg-purple-400">🔍 Extrair Texto (OCR)</button>
+                                        <button type="button" id="geminiOcrBtn" class="px-3 py-1 bg-purple-600 dark:bg-purple-500 text-white text-sm rounded hover:bg-purple-700 dark:hover:bg-purple-400">🤖 Ler com Gemini</button>
                                     </div>
                                 </div>
                             </div>
@@ -623,17 +627,30 @@
         </div>
     </div>
 
-    <!-- Modal OCR - Confirmação da Extração -->
-    <div id="ocr-modal" class="modal-overlay hidden no-print">
+    <!-- Modal GEMINI OCR - Confirmação da Extração via IA -->
+    <div id="gemini-ocr-modal" class="modal-overlay hidden no-print">
         <div class="modal-content w-full max-w-3xl h-[85vh] flex flex-col p-4 sm:p-6">
-            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white shrink-0 flex items-center gap-2">🔍 Confirmar Extração do Cardápio</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 shrink-0">Revise os pratos extraídos. Edite o que for necessário e confirme para salvar.</p>
-            <div class="flex-1 overflow-auto space-y-3" id="ocr-days-container">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white shrink-0 flex items-center gap-2">🤖 Confirmar Leitura do Gemini</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 shrink-0">Revise os pratos lidos pela IA. Edite o que for necessário e confirme para salvar.</p>
+            <div class="flex-1 overflow-auto space-y-3" id="gemini-ocr-days-container">
                 <!-- Dias gerados via JS -->
             </div>
             <div class="mt-4 flex justify-end space-x-3 shrink-0">
-                <button type="button" id="cancel-ocr-btn" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
-                <button type="button" id="confirm-ocr-btn" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">✅ Confirmar e Salvar Cardápio</button>
+                <button type="button" id="cancel-gemini-ocr-btn" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
+                <button type="button" id="confirm-gemini-ocr-btn" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">✅ Salvar Texto do Cardápio</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurações Gemini OCR (aba no painel ADM) -->
+    <div id="gemini-ocr-settings-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content w-full max-w-2xl h-[85vh] flex flex-col p-4 sm:p-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white shrink-0">⚙️ Configurações do Gemini OCR</h2>
+            <div class="flex-1 overflow-auto" id="gemini-ocr-settings-content">
+                <!-- Renderizado via geminiOcrRenderSettingsTab() -->
+            </div>
+            <div class="mt-4 flex justify-end space-x-3 shrink-0">
+                <button type="button" id="close-gemini-settings-btn" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Fechar</button>
             </div>
         </div>
     </div>
@@ -738,7 +755,7 @@
     <script src="js/notificationChecker.js"></script>
     <script src="js/notificationTrigger.js"></script>
     <script src="js/pushRegistration.js"></script>
-    <script src="js/ocr.js"></script>
+    <script src="js/gemini-ocr.js"></script>
     <script src="js/fontzoom.js"></script>
     <script src="js/app.js"></script>
 </body>

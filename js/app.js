@@ -151,14 +151,14 @@
     }
 
     // v3.2: botão de OCR (extrair texto do cardápio)
-    const ocrBtn = document.getElementById('ocrImageBtn');
-    if (ocrBtn) {
-      ocrBtn.addEventListener('click', async () => {
-        ocrBtn.disabled = true;
+    const geminiOcrBtn = document.getElementById('geminiOcrBtn');
+    if (geminiOcrBtn) {
+      geminiOcrBtn.addEventListener('click', async () => {
+        geminiOcrBtn.disabled = true;
         try {
-          await ocrStartFromUpload();
+          await geminiOcrStartFromUpload();
         } finally {
-          ocrBtn.disabled = false;
+          geminiOcrBtn.disabled = false;
         }
       });
     }
@@ -357,6 +357,42 @@
       else { document.getElementById('admin-login-modal').classList.remove('hidden'); }
     });
 
+    // ===== v3.2: Abrir configurações do Gemini OCR ======
+    const openGeminiSettingsBtn = document.getElementById('openGeminiSettingsBtn');
+    if (openGeminiSettingsBtn) {
+      openGeminiSettingsBtn.addEventListener('click', () => {
+        document.getElementById('gemini-ocr-settings-modal').classList.remove('hidden');
+        // Renderiza a aba de configurações (carrega valores atuais)
+        if (typeof geminiOcrRenderSettingsTab === 'function') geminiOcrRenderSettingsTab();
+      });
+    }
+
+    // ===== v3.2: Verificar atualizações ======
+    const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+    if (checkUpdateBtn) {
+      checkUpdateBtn.addEventListener('click', async () => {
+        const statusEl = document.getElementById('updateStatus');
+        checkUpdateBtn.disabled = true;
+        checkUpdateBtn.textContent = '🔄 Verificando...';
+        statusEl.textContent = 'Verificando versão no GitHub...';
+        try {
+          // GitHub API para latest release/tag
+          const res = await fetch('https://api.github.com/repos/netdiscada/cardapio-v3/releases/latest');
+          if (res.ok) {
+            const data = await res.json();
+            statusEl.textContent = 'Última versão: ' + (data.tag_name || data.name || 'desconhecida') + ' — ' + new Date(data.published_at).toLocaleDateString('pt-BR');
+          } else {
+            statusEl.textContent = 'Não foi possível verificar (limite API ou rede).';
+          }
+        } catch (e) {
+          statusEl.textContent = 'Erro ao verificar: ' + e.message;
+        } finally {
+          checkUpdateBtn.disabled = false;
+          checkUpdateBtn.textContent = '🔄 Verificar Atualizações Agora';
+        }
+      });
+    }
+
     document.getElementById('admin-login-form').addEventListener('submit', handleAdminLogin);
     document.getElementById('adminLogoutBtn').addEventListener('click', handleAdminLogout);
     document.getElementById('switchToUserFromAdmin').addEventListener('click', () => { localStorage.setItem('currentAppView', 'user'); showUserView(); });
@@ -441,7 +477,7 @@
     // ===== v3: Abas do painel ADM (Sidebar/TabBar) =====
     const adminTabsNav = document.getElementById('admin-tabs');
     if (adminTabsNav) {
-      const panelIds = { menu: 'menu-management-section', employees: 'employee-management-section', orders: 'order-status-section' };
+      const panelIds = { menu: 'menu-management-section', employees: 'employee-management-section', orders: 'order-status-section', settings: 'settings-section' };
       const extraOrderPanel = document.getElementById('orders-section');
 
       const showPanel = (name) => {
@@ -478,14 +514,21 @@
   document.getElementById('darkModeToggle').addEventListener('click', global.toggleDarkMode);
   document.getElementById('menu-image').addEventListener('load', global.handleImageLoad);
 
-  // ===== v3.2: OCR modal handlers =====
-  const ocrConfirmBtn = document.getElementById('confirm-ocr-btn');
-  if (ocrConfirmBtn) ocrConfirmBtn.addEventListener('click', ocrConfirmAndStore);
-  const ocrCancelBtn = document.getElementById('cancel-ocr-btn');
-  if (ocrCancelBtn) ocrCancelBtn.addEventListener('click', () => document.getElementById('ocr-modal').classList.add('hidden'));
+  // ===== v3.2: Gemini OCR modal handlers =====
+  const geminiOcrConfirmBtn = document.getElementById('confirm-gemini-ocr-btn');
+  if (geminiOcrConfirmBtn) geminiOcrConfirmBtn.addEventListener('click', geminiOcrConfirmAndStore);
+  const geminiOcrCancelBtn = document.getElementById('cancel-gemini-ocr-btn');
+  if (geminiOcrCancelBtn) geminiOcrCancelBtn.addEventListener('click', () => document.getElementById('gemini-ocr-modal').classList.add('hidden'));
+
+  // ===== v3.2: Configurações Gemini OCR modal =====
+  const closeGeminiSettingsBtn = document.getElementById('close-gemini-settings-btn');
+  if (closeGeminiSettingsBtn) closeGeminiSettingsBtn.addEventListener('click', () => document.getElementById('gemini-ocr-settings-modal').classList.add('hidden'));
 
   // ===== v3.2: Zoom de fonte persistente =====
   fontZoomInit();
+
+  // ===== v3.2: Carrega config do Gemini OCR (localStorage + Firestore) =====
+  geminiOcrLoadConfig();
 
   // ===== v3.2: Botão "Ouvir" (TTS do cardápio em texto) =====
   const speakBtn = document.getElementById('speakMenuBtn');

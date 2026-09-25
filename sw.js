@@ -5,7 +5,7 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './js/ocr.js',
+  './js/gemini-ocr.js',
   './js/fontzoom.js'
 ];
 
