@@ -17,8 +17,6 @@ const MENU_VIEWER = {
     lastScale: 1,
     posX: 0,
     posY: 0,
-    lastPosX: 0,
-    lastPosY: 0,
     isOpen: false,
     // Ponteiros ativos (para pinch)
     pointers: new Map(),
@@ -37,8 +35,6 @@ function menuViewerOpen() {
     MENU_VIEWER.posX = 0;
     MENU_VIEWER.posY = 0;
     MENU_VIEWER.lastScale = 1;
-    MENU_VIEWER.lastPosX = 0;
-    MENU_VIEWER.lastPosY = 0;
     menuViewerApplyTransform();
     modal.classList.remove('hidden');
     MENU_VIEWER.isOpen = true;
@@ -84,12 +80,28 @@ function menuViewerClose() {
 /* ====== TRANSFORM ====== */
 function menuViewerApplyTransform() {
     const img = document.getElementById('menu-viewer-img');
-    if (!img) return;
-    // Limita o pan: imagem não pode sair completamente da tela
-    MENU_VIEWER.posX = Math.max(MENU_VIEWER.posX, -window.innerWidth * MENU_VIEWER.scale);
-    MENU_VIEWER.posX = Math.min(MENU_VIEWER.posX, window.innerWidth * MENU_VIEWER.scale);
-    MENU_VIEWER.posY = Math.max(MENU_VIEWER.posY, -window.innerHeight * MENU_VIEWER.scale);
-    MENU_VIEWER.posY = Math.min(MENU_VIEWER.posY, window.innerHeight * MENU_VIEWER.scale);
+    const stage = document.getElementById('menu-viewer-stage');
+    if (!img || !stage) return;
+
+    const imgRect = img.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+
+    // A imagem escalada ocupa: naturalWidth * scale, naturalHeight * scale
+    // O container é stageRect
+    // O centro da imagem está em: stageRect.center + translate
+    // Para não deixar espaço vazio nas bordas, limitamos o translate
+
+    const scaledW = img.naturalWidth * MENU_VIEWER.scale;
+    const scaledH = img.naturalHeight * MENU_VIEWER.scale;
+
+    // Se a imagem cabe no container, centraliza (posX/posY = 0)
+    // Se não cabe, pode mover até a borda da imagem coincidir com a borda do container
+    const maxX = Math.max(0, (scaledW - stageRect.width) / 2);
+    const maxY = Math.max(0, (scaledH - stageRect.height) / 2);
+
+    MENU_VIEWER.posX = Math.max(-maxX, Math.min(maxX, MENU_VIEWER.posX));
+    MENU_VIEWER.posY = Math.max(-maxY, Math.min(maxY, MENU_VIEWER.posY));
+
     img.style.transform = `translate(${MENU_VIEWER.posX}px, ${MENU_VIEWER.posY}px) scale(${MENU_VIEWER.scale})`;
 }
 
@@ -158,9 +170,8 @@ function menuViewerBindEvents() {
             MENU_VIEWER.pointers.delete(e.pointerId);
             if (MENU_VIEWER.pointers.size === 0) panStart = null;
             if (MENU_VIEWER.pointers.size < 2) MENU_VIEWER.lastPinchDist = 0;
+            // NÃO reinicia panStart aqui - evita zoom/pann jump ao levantar dedos
             if (MENU_VIEWER.pointers.size === 1) {
-                const pt = [...MENU_VIEWER.pointers.values()][0];
-                panStart = { x: pt.x, y: pt.y, posX: MENU_VIEWER.posX, posY: MENU_VIEWER.posY };
                 MENU_VIEWER.lastScale = MENU_VIEWER.scale;
             }
         })
