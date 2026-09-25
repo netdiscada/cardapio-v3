@@ -14,8 +14,8 @@ const GEMINI_OCR = {
         quinta: 'Quinta-feira',
         sexta: 'Sexta-feira'
     },
-    // Modelo Gemini (configurável via ADM)
-    model: 'gemini-1.5-flash',
+    // Modelo Gemini (configurável via ADM) - v1beta usa modelos 2.5 (2025)
+    model: 'gemini-2.5-flash',
     apiKey: '',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
     // Prompt otimizado para cardápios brasileiros
@@ -249,11 +249,10 @@ function geminiOcrRenderSettingsTab() {
                     <div>
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Modelo</label>
                         <select id="gemini-model-select" class="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                            <option value="gemini-1.5-flash" ${GEMINI_OCR.model === 'gemini-1.5-flash' ? 'selected' : ''}>gemini-1.5-flash (recomendado, 1.500/dia grátis, estável)</option>
-                            <option value="gemini-1.5-flash-8b" ${GEMINI_OCR.model === 'gemini-1.5-flash-8b' ? 'selected' : ''}>gemini-1.5-flash-8b (1.500/dia, mais leve)</option>
-                            <option value="gemini-1.5-pro" ${GEMINI_OCR.model === 'gemini-1.5-pro' ? 'selected' : ''}>gemini-1.5-pro (50/dia grátis, mais preciso)</option>
+                            <option value="gemini-2.5-flash" ${GEMINI_OCR.model === 'gemini-2.5-flash' ? 'selected' : ''}>gemini-2.5-flash (recomendado, 1.500/dia grátis, estável)</option>
+                            <option value="gemini-2.5-pro" ${GEMINI_OCR.model === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (50/dia grátis, mais preciso)</option>
                         </select>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">gemini-2.0-flash ainda não está GA para API pública. Use 1.5-flash.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Modelos 1.5 removidos da API v1beta. Use 2.5-flash ou 2.5-pro.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Prompt (avançado)</label>
