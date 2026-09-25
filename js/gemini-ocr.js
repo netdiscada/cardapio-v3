@@ -141,9 +141,11 @@ async function geminiOcrRun(imageBase64) {
 
     if (!res.ok) {
         const err = await res.text();
-        if (res.status === 400 && err.includes('API_KEY')) throw new Error('API Key inválida ou expirada.');
-        if (res.status === 429) throw new Error('Limite diário atingido (1500 req/dia grátis). Tente amanhã.');
-        throw new Error('Gemini erro ' + res.status + ': ' + err.slice(0, 200));
+        let msg = 'Gemini erro ' + res.status + ': ' + err.slice(0, 200);
+        if (res.status === 400 && err.includes('API_KEY')) msg = 'API Key inválida ou expirada.';
+        if (res.status === 403 && err.includes('unregistered')) msg = 'API não habilitada no projeto. Vá em: https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com?project=SEU_PROJETO → "Ativar"';
+        if (res.status === 429) msg = 'Limite diário atingido (1.500 req/dia grátis). Tente amanhã ou use outro projeto/key.';
+        throw new Error(msg);
     }
 
     const data = await res.json();
@@ -290,17 +292,35 @@ function geminiOcrRenderSettingsTab() {
         btn.disabled = true;
         btn.textContent = '🔄 Testando...';
         try {
-            const res = await fetch(`${GEMINI_OCR.baseUrl}/${GEMINI_OCR.model}:generateContent?key=${GEMINI_OCR.apiKey}`, {
+            // Teste leve: countTokens (consome menos quota que generateContent)
+            const res = await fetch(`${GEMINI_OCR.baseUrl}/${GEMINI_OCR.model}:countTokens?key=${GEMINI_OCR.apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: 'Responda apenas: OK' }] }],
-                    generationConfig: { maxOutputTokens: 10 }
+                    contents: [{ parts: [{ text: 'teste' }] }]
                 })
             });
-            if (res.ok) showToast('✅ Conexão OK! API Key válida.', 'success');
-            else { const t = await res.text(); showToast('❌ ' + res.status + ': ' + t.slice(0, 100), 'error'); }
-        } catch (e) { showToast('❌ Erro: ' + e.message, 'error'); }
-        finally { btn.disabled = false; btn.textContent = '🧪 Testar Conexão'; }
+            if (res.ok) {
+                showToast('✅ Conexão OK! API Key válida e Generative Language API ativada.', 'success');
+            } else {
+                const err = await res.json();
+                const msg = err.error?.message || 'Erro desconhecido';
+                if (res.status === 403 && msg.includes('unregistered')) {
+                    showToast('❌ 403: API "Generative Language API" NÃO ATIVADA. Ative em: console.cloud.google.com → APIs → Generative Language API', 'error', 15000);
+                } else if (res.status === 400 && msg.includes('API_KEY')) {
+                    showToast('❌ API Key inválida ou mal formada.', 'error');
+                } else if (res.status === 429) {
+                    showToast('⚠️ Limite diário atingido (1.500 req/dia). Tente amanhã.', 'error');
+                } else {
+                    showToast('❌ ' + res.status + ': ' + msg.slice(0, 200), 'error');
+                }
+            }
+        } catch (e) {
+            showToast('❌ Erro de rede: ' + e.message, 'error');
+        }
+        finally {
+            btn.disabled = false;
+            btn.textContent = '🧪 Testar Conexão';
+        }
     });
 }
