@@ -203,3 +203,10 @@ function menuViewerBindEvents() {
         if (e.target.id === 'menu-viewer-modal') menuViewerClose();
     });
 }
+
+// Auto-bind: liga os eventos assim que o DOM estiver pronto
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', menuViewerBindEvents);
+} else {
+    menuViewerBindEvents();
+}

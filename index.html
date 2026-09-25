@@ -13,16 +13,15 @@
     <link rel="manifest" id="pwa-manifest">
 
     <!-- Prevenção de Piscar Branco na Troca de Tema -->
-        <script>
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                // Padrão: claro (remove dark se houver)
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-            }
-        </script>
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    </script>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -44,10 +43,165 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
-    <!-- Tesseract.js OCR (gratuito, offline após cache) -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
-
     <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Poppins', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.3s ease; }
+        .modal-content { padding: 2rem; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-height: 90vh; overflow-y: auto; width: 90%; max-width: 500px; }
+        
+        html.dark { background-color: #000000; color: #f4f4f5; }
+        .dark .modal-content { background-color: #09090b; border: 1px solid #27272a; color: #f4f4f5; }
+        html:not(.dark) .modal-content { background-color: white; color: #1f2937; }
+        
+        #image-zoom-modal .modal-content { width: auto; max-width: 95%; padding: 0.5rem; background: none !important; box-shadow: none; border: none; }
+        #zoomed-image { max-width: 90vw; max-height: 85vh; border-radius: 0.75rem; }
+        
+        input:read-only { cursor: not-allowed; }
+        html:not(.dark) input:read-only { background-color: #f3f4f6; }
+        .dark input:read-only { background-color: #18181b !important; color: #a1a1aa; border-color: #27272a; }
+
+        /* Wizard Buttons */
+        .wizard-btn { transition: all 0.2s ease-in-out; }
+        .wizard-btn:hover { transform: scale(1.03); border-color: #3b82f6; }
+        .wizard-btn:active { transform: scale(0.98); }
+        .dark .wizard-btn:active { background-color: #1e3a8a; }
+        html:not(.dark) .wizard-btn:active { background-color: #eff6ff; }
+
+        /* APRIMORAMENTO: Refinamento de dark mode para consistência */
+        .dark {
+          --tw-border-opacity: 0.1;
+          --tw-bg-opacity: 0.9;
+          --tw-shadow: 0 0 #0000;
+        }
+
+        .dark .modal-content {
+          background-color: #09090b !important; /* Garante sobrescrita */
+          border-color: #27272a !important;
+        }
+
+        .dark #cropper-container,
+        .dark #imagePreviewContainer {
+          background-color: #09090b !important;
+        }
+
+        .dark .wizard-btn:active {
+          background-color: #1e3a8a !important;
+        }
+
+        .dark input:read-only {
+          background-color: #18181b !important;
+          color: #a1a1aa !important;
+          border-color: #27272a !important;
+        }
+
+        #cropper-container { max-height: 50vh; width: 100%; display: flex; justify-content: center; align-items: center; background-color: #f3f4f6; }
+        .dark #cropper-container { background-color: #18181b; }
+        #cropper-image { display: block; max-width: 100%; max-height: 100%; }
+
+        /* Toast Notifications */
+        #app-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #333; color: white; padding: 12px 24px; border-radius: 8px; z-index: 2000; opacity: 0; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; pointer-events: none; transform: translateX(-50%) translateY(20px); }
+        #app-toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        #app-toast.success { background-color: #22c55e; }
+        #app-toast.error { background-color: #ef4444; }
+        #app-toast.info { background-color: #3b82f6; }
+
+        /* ===== Painel ADM: Bottom Bar fixa (Sem rolagem) ===== */
+        #admin-tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #e5e7eb;
+            padding: 0.5rem 0.75rem;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+        html.dark #admin-tabs {
+            background-color: rgba(24, 24, 27, 0.95);
+            border-top-color: #27272a;
+        }
+        .admin-tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 0.4rem 0.2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.15s ease, background-color 0.15s ease;
+            gap: 0.15rem;
+            text-align: center;
+        }
+        html.dark .admin-tab-btn { color: #a1a1aa; }
+        .admin-tab-btn:hover { color: #2563eb; background-color: rgba(37, 99, 235, 0.05); }
+        html.dark .admin-tab-btn:hover { color: #60a5fa; background-color: rgba(96, 165, 250, 0.05); }
+        .admin-tab-btn.active { color: #2563eb; background-color: rgba(37, 99, 235, 0.1); font-weight: 700; }
+        html.dark .admin-tab-btn.active { color: #60a5fa; background-color: rgba(96, 165, 250, 0.15); }
+
+        /* Badge de contagem de pedidos na aba Pedidos */
+        .admin-tab-btn { position: relative; }
+        .admin-badge {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.5rem;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            padding: 0 0.3rem;
+            background-color: #ef4444;
+            color: #ffffff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1.15rem;
+            border-radius: 9999px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+        }
+        .admin-badge.hidden { display: none; }
+
+        /* Espaçamento inferior no admin-view para o conteúdo não ficar coberto pela barra fixa */
+        #admin-view:not(.hidden) {
+            padding-bottom: 5rem;
+        }
+        #user-view:not(.hidden) {
+            padding-bottom: 5rem;
+        }
+        /* Bottom bar do funcionário: controlada por classe no body (show-user-tabs),
+           alternada pelo JS junto com showUserView/showAdminView */
+        #user-tabs { display: none; }
+        body.show-user-tabs #user-tabs { display: flex; }
+        /* Guarda contra zoom-out por overflow horizontal: conteúdo ADM nunca
+           pode ultrapassar a largura da tela (corta em vez de alargar a página) */
+        #admin-view section, #admin-view section > * { max-width: 100%; }
+        #rgf-consult-result { overflow-wrap: anywhere; }
+        
+        @media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+    <!-- Firebase (build compat, v11.6.1 identica ao v1.x) -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+<style>
         html { scroll-behavior: smooth; }
         body { font-family: 'Poppins', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -225,11 +379,7 @@
                     margin-top: 0.5rem;
                 }
             </style>
-    <!-- Firebase (build compat, v11.6.1 identica ao v1.x) -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-    <link rel="stylesheet" href="css/styles.css">
+<script src="js/menu-viewer.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-black text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
@@ -240,14 +390,9 @@
 
     <!-- Botões Flutuantes Superiores -->
     <div class="absolute top-0 left-0 right-0 w-full z-50 p-2 flex justify-between no-print pointer-events-none">
-        <div class="flex items-center gap-2 pointer-events-auto">
-            <button id="darkModeToggle" class="text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-                🌙 Modo Noturno
-            </button>
-            <button id="fontZoomBtn" class="text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" title="Ajustar tamanho do texto do app">
-                🔍 Aa
-            </button>
-        </div>
+        <button id="darkModeToggle" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+            🌙 Modo Noturno
+        </button>
         <button id="switchToAdmin" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
             ⚙️ ADM
         </button>
@@ -255,61 +400,42 @@
 
     <div id="app-container" class="container mx-auto max-w-4xl p-2 sm:p-6 pb-20 mt-8 sm:mt-6">
         
-            <!-- ================= VISÃO DO USUÁRIO ================= -->
-            <div id="user-view" class="no-print">
-                <div id="form-container">
-                    <div class="text-center mb-6 mt-4">
-                        <h1 class="text-4xl text-blue-600 dark:text-blue-500 drop-shadow-sm" style="font-family: 'Lobster Two', cursive;">Delícias Urbanas</h1>
-                        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
-                        <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
-                            <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
+        <!-- ================= VISÃO DO USUÁRIO ================= -->
+        <div id="user-view" class="no-print">
+            <div id="form-container">
+                <div class="text-center mb-6 mt-4">
+                    <h1 class="text-4xl text-blue-600 dark:text-blue-500 drop-shadow-sm" style="font-family: 'Lobster Two', cursive;">Delícias Urbanas</h1>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
+                    <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
+                        <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
+                    </div>
+                </div>
+
+                <!-- Autenticação do Usuário via RGF -->
+                <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 sm:p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
+                    <h2 class="block text-md font-semibold text-gray-800 dark:text-gray-100 mb-3">👤 1. Identificação</h2>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <div>
+                            <input type="text" id="employeeRGF" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
+                        </div>
+                        <div>
+                            <input type="text" id="employeeName" placeholder="Preenchido automaticamente" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 font-semibold rounded-lg transition-colors" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="order-section" class="hidden scroll-mt-2">
+                    <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
+                        <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
+                            <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
+                        </div>
+                        <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
+                        <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
                         </div>
                     </div>
 
-                    <!-- Autenticação do Usuário via RGF -->
-                    <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 sm:p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
-                        <h2 class="block text-md font-semibold text-gray-800 dark:text-gray-100 mb-3">👤 1. Identificação</h2>
-                        <div class="grid sm:grid-cols-2 gap-3">
-                            <div>
-                                <input type="text" id="employeeRGF" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
-                            </div>
-                            <div>
-                                <input type="text" id="employeeName" placeholder="Preenchido automaticamente" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 font-semibold rounded-lg transition-colors" readonly>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="order-section" class="hidden scroll-mt-2">
-
-                        <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
-                            <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
-                                <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
-                            </div>
-                            <div id="menu-image-wrapper" class="w-full h-[60vh] max-h-[75vh] overflow-auto touch-pan-x touch-pan-y relative z-10" style="touch-action: pinch-zoom;">
-                                <img id="menu-image" src="" alt="Cardápio da Semana" class="w-auto h-auto min-w-full min-h-full object-contain cursor-grab rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300" style="touch-action: pinch-zoom;">
-                            </div>
-                            <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20" id="zoom-hint">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
-                            </div>
-
-                        <!-- Botões rápidos de dia (sempre visíveis, fixos no topo da área de escolha) -->
-                        <div id="day-quick-pick" class="mb-4 p-2 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 transition-colors">
-                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 text-center">Toque no dia para ir direto →</p>
-                            <div class="flex flex-wrap justify-center gap-2" id="day-quick-buttons"></div>
-                        </div>
-
-                        <!-- Botões de escolha FIXOS na parte de baixo (aparecem ao tocar na imagem) -->
-                        <div id="menu-bottom-actions" class="hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-t border-gray-200 dark:border-zinc-800 shadow-lg no-print flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4 px-4 sm:px-6 pb-[env(safe-area-inset-bottom)] pointer-events-none">
-                            <div class="flex-1 sm:flex-none text-center sm:text-left pointer-events-auto">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Faça seu zoom na imagem, depois escolha:</p>
-                            </div>
-                            <div class="flex flex-wrap gap-2 justify-center pointer-events-auto" id="menu-bottom-options">
-                                <!-- Botões gerados via JS: um por opção do dia atual -->
-                            </div>
-                            <button id="close-menu-zoom-btn" class="w-full sm:w-auto px-4 py-2 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors pointer-events-auto">✕ Fechar zoom</button>
-                        </div>
-
-                        <div id="existing-order-container" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border-2 border-green-100 dark:border-green-900/50 fade-in transition-colors">
+                    <div id="existing-order-container" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border-2 border-green-100 dark:border-green-900/50 fade-in transition-colors">
                         <div class="text-center mb-6">
                             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 mb-4">
                                 <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -318,7 +444,7 @@
                             <p class="text-gray-600 dark:text-gray-400 mt-2 font-medium">Você já realizou este pedido. Consulte abaixo as suas escolhas:</p>
                         </div>
                         <div id="existing-order-details" class="space-y-3 mb-4"></div>
-                        </div>
+                    </div>
 
                     <div id="order-wizard-container" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800 mb-4 transition-colors">
                         <div id="order-wizard">
@@ -447,7 +573,7 @@
                     <span>Pedidos</span>
                     <span id="ordersBadge" class="admin-badge hidden">0</span>
                 </button>
-                </nav>
+            </nav>
 
             <!-- Gerenciamento de Cardápio -->
             <section id="menu-management-section" data-admin-panel="menu" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
@@ -497,7 +623,7 @@
                                         <span>Dimensões:</span> <span id="imageDimensions">-</span>
                                         <span>Tamanho estimado:</span> <span id="imageSize">-</span>
                                     </div>
-                                    <div class="mt-3 flex flex-wrap gap-2">
+                                    <div class="mt-3 flex gap-2">
                                         <button type="button" id="resetUpload" class="px-3 py-1 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded hover:bg-gray-300 dark:hover:bg-zinc-600">Redefinir</button>
                                         <button type="button" id="cropImageBtn" class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded hover:bg-blue-700 dark:hover:bg-blue-400">Recortar Imagem</button>
                                     </div>
@@ -596,57 +722,35 @@
             </section>
 
             <!-- Tabela de Pedidos -->
-                        <section id="orders-section" data-admin-panel="orders" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                            <div class="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b dark:border-zinc-800 pb-4 transition-colors">
-                                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">Pedidos Recebidos</h2>
-                                <div class="flex space-x-2 bg-gray-100 dark:bg-zinc-900 p-1 rounded-lg border border-gray-200 dark:border-zinc-800">
-                                    <button id="admin-view-current" class="px-4 py-1.5 bg-white dark:bg-zinc-800 shadow-sm rounded-md text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors cursor-pointer">Esta Semana</button>
-                                    <button id="admin-view-next" class="px-4 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-md text-sm font-semibold transition-colors cursor-pointer">Próxima Semana</button>
-                                </div>
-                            </div>
-                            <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <div class="w-full sm:w-auto">
-                                    <input type="text" id="searchInput" placeholder="🔎 Buscar por nome..." class="w-full sm:w-64 px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-medium rounded-lg transition-colors">
-                                </div>
-                                <!-- Botão de PDF como FAB (acima da bottom bar) -->
-                                <button id="generateReportBtn" class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-700 dark:hover:bg-blue-400 transition-transform transform active:scale-95 z-[999] flex items-center justify-center" title="Gerar PDF">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504-1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
-                                </button>
-                            </div>
-                            <div id="ordersTableContainer" class="overflow-x-auto"><p class="text-gray-500 dark:text-gray-400 font-medium">A carregar pedidos...</p></div>
-                        </section>
-
+            <section id="orders-section" data-admin-panel="orders">
+                <div class="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b dark:border-zinc-800 pb-4 transition-colors">
+                    <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">Pedidos Recebidos</h2>
+                    <div class="flex space-x-2 bg-gray-100 dark:bg-zinc-900 p-1 rounded-lg border border-gray-200 dark:border-zinc-800">
+                        <button id="admin-view-current" class="px-4 py-1.5 bg-white dark:bg-zinc-800 shadow-sm rounded-md text-sm font-bold text-blue-600 dark:text-blue-400 transition-colors cursor-pointer">Esta Semana</button>
+                        <button id="admin-view-next" class="px-4 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-md text-sm font-semibold transition-colors cursor-pointer">Próxima Semana</button>
                     </div>
                 </div>
+                <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="w-full sm:w-auto">
+                        <input type="text" id="searchInput" placeholder="🔎 Buscar por nome..." class="w-full sm:w-64 px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white font-medium rounded-lg transition-colors">
+                    </div>
+                    <!-- APRIMORAMENTO: Botão de PDF mais proeminente como FAB (acima da bottom bar) -->
+                    <button id="generateReportBtn" class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-700 dark:hover:bg-blue-400 transition-transform transform active:scale-95 z-[999] flex items-center justify-center" title="Gerar PDF">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
+                    </button>
+                </div>
+                <div id="ordersTableContainer" class="overflow-x-auto"><p class="text-gray-500 dark:text-gray-400 font-medium">A carregar pedidos...</p></div>
+            </section>
+        </div>
+    </div>
 
     <!-- Modals -->
-        <!-- VISUALIZADOR DO CARDÁPIO (fullscreen, pinch-zoom, botões fixos) -->
-        <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
-            <!-- Topo: fecha + controles de zoom -->
-            <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
-                <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
-                <div class="flex items-center gap-2">
-                    <button type="button" id="viewer-zoom-out" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Diminuir">−</button>
-                    <button type="button" id="viewer-reset" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-sm font-bold active:scale-90 transition-transform" title="Tamanho original">1:1</button>
-                    <button type="button" id="viewer-zoom-in" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Aumentar">+</button>
-                </div>
-            </div>
-            <!-- Palco: imagem com pinch/pan -->
-            <div id="menu-viewer-stage" class="flex-1 overflow-hidden relative flex items-center justify-center" style="touch-action:none; cursor:grab;">
-                <img id="menu-viewer-img" src="" alt="Cardápio ampliado" class="max-w-full max-h-full object-contain select-none pointer-events-none" style="transform-origin:center center; will-change:transform;" draggable="false">
-            </div>
-            <!-- Rodapé: botões de escolha (FIXOS, sempre visíveis) -->
-            <div id="menu-viewer-buttons" class="shrink-0 p-3 pt-2" style="background:rgba(0,0,0,0.3); padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
-                <!-- order-wizard-container é movido pra cá via JS quando o viewer abre -->
-            </div>
+    <!-- Modal de Zoom da Imagem -->
+    <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
+        <div class="modal-content">
+            <img id="zoomed-image" src="" alt="Imagem Ampliada">
         </div>
-
-        <!-- Modal de Zoom da Imagem (legado, mantido para compat) -->
-        <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
-            <div class="modal-content">
-                <img id="zoomed-image" src="" alt="Imagem Ampliada">
-            </div>
-        </div>
+    </div>
     
     <!-- Modal de Relatório Público -->
     <div id="public-report-modal" class="modal-overlay hidden no-print">
@@ -677,7 +781,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Modal Editar Pedido -->
     <div id="edit-order-modal" class="modal-overlay hidden no-print">
         <div class="modal-content w-full max-w-lg">
@@ -776,10 +880,26 @@
     <script src="js/admin.js"></script>
     <script src="js/userhelp.js"></script>
     <script src="js/notificationChecker.js"></script>
-        <script src="js/notificationTrigger.js"></script>
-        <script src="js/pushRegistration.js"></script>
-        <script src="js/fontzoom.js"></script>
-        <script src="js/menu-viewer.js"></script>
-        <script src="js/app.js"></script>
+    <script src="js/notificationTrigger.js"></script>
+    <script src="js/pushRegistration.js"></script>
+    <script src="js/app.js"></script>
+<div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
+            <!-- Topo: fecha + controles de zoom -->
+            <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
+                <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="viewer-zoom-out" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Diminuir">−</button>
+                    <button type="button" id="viewer-reset" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-sm font-bold active:scale-90 transition-transform" title="Tamanho original">1:1</button>
+                    <button type="button" id="viewer-zoom-in" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Aumentar">+</button>
+                </div>
+            </div>
+            <!-- Palco da imagem (pinch-zoom + pan) -->
+            <div id="menu-viewer-stage" class="flex-1 overflow-hidden relative touch-none flex items-center justify-center">
+                <img id="menu-viewer-img" src="" alt="Cardápio ampliado" class="max-w-full max-h-full object-contain select-none" draggable="false" style="transform-origin:center center;">
+            </div>
+            <!-- Botões de escolha FIXOS embaixo -->
+            <div id="menu-viewer-buttons" class="shrink-0 p-3 pb-4 max-h-[45vh] overflow-y-auto" style="background:#18181b;">
+            </div>
+        </div>
 </body>
 </html>

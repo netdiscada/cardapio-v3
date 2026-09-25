@@ -140,8 +140,6 @@
       resetBtn.addEventListener('click', () => {
         st.finalImageBase64 = null;
         fileInput.value = '';
-        // v3.2: limpa também o texto extraído via OCR
-        window.__menuTextExtracted = null;
         const previewContainer = document.getElementById('imagePreviewContainer');
         if (previewContainer) previewContainer.classList.add('hidden');
         const uploadBtn = document.getElementById('uploadImageBtn');
@@ -149,7 +147,6 @@
         showToast("Upload redefinido.", "info");
       });
     }
-
 
     if (cropBtn) {
       cropBtn.addEventListener('click', () => {
@@ -231,8 +228,7 @@
         if (daysUntilMonday === 0) daysUntilMonday = 7;
         const nextMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday);
         nextMonday.setHours(0, 0, 0, 0);
-        const menuTextData = (window.__menuTextExtracted && typeof window.__menuTextExtracted === 'object') ? window.__menuTextExtracted : null;
-        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime(), ...(menuTextData ? { nextMenuText: menuTextData } : {}) }, { merge: true });
+        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime() }, { merge: true });
         showToast("Cardápio da Próxima Semana salvo e disponível!", "success");
         document.getElementById('whatsapp-notification-container').classList.remove('hidden');
         // Dispara notificação push real via Vercel endpoint
@@ -317,10 +313,6 @@
         localStorage.setItem('employeeRGF', val);
         await findEmployeeByRGF(val);
         await validateForm();
-        // v3.2: restaura o zoom de fonte salvo deste funcionário (Firestore)
-        if (typeof fontZoomRestoreFromProfile === 'function' && val) {
-          fontZoomRestoreFromProfile(val);
-        }
       }, 400);
     });
     rgfInput.addEventListener('blur', () => localStorage.setItem('employeeRGF', rgfInput.value));
@@ -344,33 +336,6 @@
       if (auth?.currentUser && auth.currentUser.uid === APP_CONFIG.ADMIN_UID) { localStorage.setItem('currentAppView', 'admin'); showAdminView(); }
       else { document.getElementById('admin-login-modal').classList.remove('hidden'); }
     });
-
-
-    // ===== v3.2: Verificar atualizações ======
-    const checkUpdateBtn = document.getElementById('checkUpdateBtn');
-    if (checkUpdateBtn) {
-      checkUpdateBtn.addEventListener('click', async () => {
-        const statusEl = document.getElementById('updateStatus');
-        checkUpdateBtn.disabled = true;
-        checkUpdateBtn.textContent = '🔄 Verificando...';
-        statusEl.textContent = 'Verificando versão no GitHub...';
-        try {
-          // GitHub API para latest release/tag
-          const res = await fetch('https://api.github.com/repos/netdiscada/cardapio-v3/releases/latest');
-          if (res.ok) {
-            const data = await res.json();
-            statusEl.textContent = 'Última versão: ' + (data.tag_name || data.name || 'desconhecida') + ' — ' + new Date(data.published_at).toLocaleDateString('pt-BR');
-          } else {
-            statusEl.textContent = 'Não foi possível verificar (limite API ou rede).';
-          }
-        } catch (e) {
-          statusEl.textContent = 'Erro ao verificar: ' + e.message;
-        } finally {
-          checkUpdateBtn.disabled = false;
-          checkUpdateBtn.textContent = '🔄 Verificar Atualizações Agora';
-        }
-      });
-    }
 
     document.getElementById('admin-login-form').addEventListener('submit', handleAdminLogin);
     document.getElementById('adminLogoutBtn').addEventListener('click', handleAdminLogout);
@@ -431,22 +396,9 @@
       });
     });
 
-    // ===== v3.3: Visualizador fullscreen com pinch-zoom + botões fixos =====
+    // v3.3: abre o visualizador fullscreen (pinch-zoom + botões fixos)
     const menuImage = document.getElementById('menu-image');
-    menuImage.addEventListener('click', () => {
-      if (typeof menuViewerOpen === 'function') menuViewerOpen();
-      else {
-        // Fallback: modal de zoom antigo
-        document.getElementById('zoomed-image').src = menuImage.src;
-        document.getElementById('image-zoom-modal').classList.remove('hidden');
-      }
-    });
-    const zoomModal = document.getElementById('image-zoom-modal');
-    zoomModal.addEventListener('click', (e) => {
-      if (e.target === zoomModal) zoomModal.classList.add('hidden');
-    });
-    // Bind dos eventos do viewer (pinch/pan/botões)
-    if (typeof menuViewerBindEvents === 'function') menuViewerBindEvents();
+    menuImage.addEventListener('click', () => { if (typeof menuViewerOpen === 'function') menuViewerOpen(); });
 
     // ===== v3: Handlers do calendario interativo + busca de funcionarios =====
     if (global.bindHolidayCalendarHandlers) global.bindHolidayCalendarHandlers();
@@ -466,7 +418,7 @@
     // ===== v3: Abas do painel ADM (Sidebar/TabBar) =====
     const adminTabsNav = document.getElementById('admin-tabs');
     if (adminTabsNav) {
-      const panelIds = { menu: 'menu-management-section', employees: 'employee-management-section', orders: 'order-status-section', settings: 'settings-section' };
+      const panelIds = { menu: 'menu-management-section', employees: 'employee-management-section', orders: 'order-status-section' };
       const extraOrderPanel = document.getElementById('orders-section');
 
       const showPanel = (name) => {
@@ -502,19 +454,6 @@
   updateDarkModeButton();
   document.getElementById('darkModeToggle').addEventListener('click', global.toggleDarkMode);
   document.getElementById('menu-image').addEventListener('load', global.handleImageLoad);
-
-  // ===== v3.2: Zoom de fonte persistente =====
-  fontZoomInit();
-
-
-  // ===== v3.2: Botão "Ouvir" (TTS do cardápio em texto) =====
-  const speakBtn = document.getElementById('speakMenuBtn');
-  if (speakBtn) {
-    speakBtn.addEventListener('click', () => {
-      const menuText = (global.__state && global.__state.weeklyMenu && global.__state.weeklyMenu.menuText) || {};
-      speakMenuText(menuText);
-    });
-  }
 
   window.addEventListener('online', () => { updateOnlineStatus(); showToast("Conexão restabelecida!", "success"); });
   window.addEventListener('offline', () => { updateOnlineStatus(); showToast("Você está offline. Alterações serão salvas no celular.", "info", 5000); });
