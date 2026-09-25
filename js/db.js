@@ -84,8 +84,10 @@
           transaction.set(global.getMenuDocRef(), {
             menuImageBase64: menuData.nextMenuImageBase64 || '',
             holidays: menuData.nextHolidays || [],
+            menuText: menuData.nextMenuText || {},
             nextMenuImageBase64: '',
             nextHolidays: [],
+            nextMenuText: {},
             targetRotationDate: null
           }, { merge: true });
           isWinner = true; // Confirma que ESSE celular obteve sucesso em virar a semana
@@ -132,8 +134,10 @@
         batch.set(menuDocRef, {
           menuImageBase64: data.nextMenuImageBase64,
           holidays: data.nextHolidays || [],
+          menuText: data.nextMenuText || {},
           nextMenuImageBase64: '',
           nextHolidays: [],
+          nextMenuText: {},
           targetRotationDate: null
         }, { merge: true });
         await batch.commit();

@@ -21,7 +21,7 @@
 
     st.menuUnsubscribe = fb.onSnapshot(global.getMenuDocRef(), async (docSnap) => {
       const hadNextWeek = !!st.currentMenuData.nextMenuImageBase64;
-      st.currentMenuData = (docSnap.exists && docSnap.data()) ? docSnap.data() : { menuImageBase64: '', holidays: [], nextMenuImageBase64: '', nextHolidays: [], targetRotationDate: null };
+      st.currentMenuData = (docSnap.exists && docSnap.data()) ? docSnap.data() : { menuImageBase64: '', holidays: [], nextMenuImageBase64: '', nextHolidays: [], targetRotationDate: null, menuText: {}, nextMenuText: {} };
       const hasNextWeek = !!st.currentMenuData.nextMenuImageBase64;
 
       // Transicao automatica no Painel ADM se houver Proxima Semana

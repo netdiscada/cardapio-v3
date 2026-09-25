@@ -140,11 +140,26 @@
       resetBtn.addEventListener('click', () => {
         st.finalImageBase64 = null;
         fileInput.value = '';
+        // v3.2: limpa também o texto extraído via OCR
+        window.__menuTextExtracted = null;
         const previewContainer = document.getElementById('imagePreviewContainer');
         if (previewContainer) previewContainer.classList.add('hidden');
         const uploadBtn = document.getElementById('uploadImageBtn');
         if (uploadBtn) uploadBtn.disabled = true;
         showToast("Upload redefinido.", "info");
+      });
+    }
+
+    // v3.2: botão de OCR (extrair texto do cardápio)
+    const ocrBtn = document.getElementById('ocrImageBtn');
+    if (ocrBtn) {
+      ocrBtn.addEventListener('click', async () => {
+        ocrBtn.disabled = true;
+        try {
+          await ocrStartFromUpload();
+        } finally {
+          ocrBtn.disabled = false;
+        }
       });
     }
 
@@ -228,7 +243,8 @@
         if (daysUntilMonday === 0) daysUntilMonday = 7;
         const nextMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilMonday);
         nextMonday.setHours(0, 0, 0, 0);
-        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime() }, { merge: true });
+        const menuTextData = (window.__menuTextExtracted && typeof window.__menuTextExtracted === 'object') ? window.__menuTextExtracted : null;
+        await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime(), ...(menuTextData ? { nextMenuText: menuTextData } : {}) }, { merge: true });
         showToast("Cardápio da Próxima Semana salvo e disponível!", "success");
         document.getElementById('whatsapp-notification-container').classList.remove('hidden');
         // Dispara notificação push real via Vercel endpoint
@@ -313,6 +329,10 @@
         localStorage.setItem('employeeRGF', val);
         await findEmployeeByRGF(val);
         await validateForm();
+        // v3.2: restaura o zoom de fonte salvo deste funcionário (Firestore)
+        if (typeof fontZoomRestoreFromProfile === 'function' && val) {
+          fontZoomRestoreFromProfile(val);
+        }
       }, 400);
     });
     rgfInput.addEventListener('blur', () => localStorage.setItem('employeeRGF', rgfInput.value));
@@ -457,6 +477,24 @@
   updateDarkModeButton();
   document.getElementById('darkModeToggle').addEventListener('click', global.toggleDarkMode);
   document.getElementById('menu-image').addEventListener('load', global.handleImageLoad);
+
+  // ===== v3.2: OCR modal handlers =====
+  const ocrConfirmBtn = document.getElementById('confirm-ocr-btn');
+  if (ocrConfirmBtn) ocrConfirmBtn.addEventListener('click', ocrConfirmAndStore);
+  const ocrCancelBtn = document.getElementById('cancel-ocr-btn');
+  if (ocrCancelBtn) ocrCancelBtn.addEventListener('click', () => document.getElementById('ocr-modal').classList.add('hidden'));
+
+  // ===== v3.2: Zoom de fonte persistente =====
+  fontZoomInit();
+
+  // ===== v3.2: Botão "Ouvir" (TTS do cardápio em texto) =====
+  const speakBtn = document.getElementById('speakMenuBtn');
+  if (speakBtn) {
+    speakBtn.addEventListener('click', () => {
+      const menuText = (global.__state && global.__state.weeklyMenu && global.__state.weeklyMenu.menuText) || {};
+      speakMenuText(menuText);
+    });
+  }
 
   window.addEventListener('online', () => { updateOnlineStatus(); showToast("Conexão restabelecida!", "success"); });
   window.addEventListener('offline', () => { updateOnlineStatus(); showToast("Você está offline. Alterações serão salvas no celular.", "info", 5000); });

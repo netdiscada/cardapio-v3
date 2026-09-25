@@ -1,10 +1,12 @@
-const CACHE_NAME = 'cardapio-cache-v2';
+const CACHE_NAME = 'cardapio-cache-v3.2';
 
 // Arquivos que devem ser guardados imediatamente na primeira vez que abre
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './js/ocr.js',
+  './js/fontzoom.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -32,6 +34,26 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+
+  // Tesseract.js: cache-first (o modelo OCR 'por' é pesado, baixa 1x e fica offline)
+  if (url.includes('tesseract') || url.includes('tessdata') || url.includes('jsdelivr')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Firebase e Firestore: sempre network (dados em tempo real)
+  if (url.includes('firebaseio') || url.includes('googleapis')) return;
+
   // Ignora envios de dados (POST, PUT), trata apenas carregamento de arquivos (GET)
   if (event.request.method !== 'GET') return;
 
@@ -52,6 +74,3 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
-
-
-  

@@ -1,5 +1,5 @@
 // Cardapio Quatinga v3 - notificationTrigger.js
-// Chama o endpoint Vercel quando eventos acontecem (salvar cardápio, novo pedido)
+// Chama o Cloudflare Worker para disparar push FCM real (barra de status Android)
 // Incluir no index.html ANTES de app.js: <script src="js/notificationTrigger.js"></script>
 
 (function (global) {
@@ -7,8 +7,8 @@
   const auth = global.auth;
   const APP_CONFIG = global.APP_CONFIG;
 
-  // URL do endpoint Vercel (configure após deploy)
-  const NOTIFY_ENDPOINT = 'https://SEU-PROJETO.vercel.app/api/notify';
+  // URL do Cloudflare Worker (deploy feito em 24/09/2026)
+  const NOTIFY_ENDPOINT = 'https://cardapio-push.menino-belu90.workers.dev';
 
   async function callNotifyEndpoint(payload) {
     try {

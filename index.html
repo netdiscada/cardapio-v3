@@ -43,6 +43,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
+    <!-- Tesseract.js OCR (gratuito, offline após cache) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+
     <style>
         html { scroll-behavior: smooth; }
         body { font-family: 'Poppins', sans-serif; }
@@ -211,9 +214,14 @@
 
     <!-- Botões Flutuantes Superiores -->
     <div class="absolute top-0 left-0 right-0 w-full z-50 p-2 flex justify-between no-print pointer-events-none">
-        <button id="darkModeToggle" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
-            🌙 Modo Noturno
-        </button>
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <button id="darkModeToggle" class="text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+                🌙 Modo Noturno
+            </button>
+            <button id="fontZoomBtn" class="text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" title="Ajustar tamanho do texto">
+                🔍 Aa
+            </button>
+        </div>
         <button id="switchToAdmin" class="pointer-events-auto text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
             ⚙️ ADM
         </button>
@@ -221,42 +229,53 @@
 
     <div id="app-container" class="container mx-auto max-w-4xl p-2 sm:p-6 pb-20 mt-8 sm:mt-6">
         
-        <!-- ================= VISÃO DO USUÁRIO ================= -->
-        <div id="user-view" class="no-print">
-            <div id="form-container">
-                <div class="text-center mb-6 mt-4">
-                    <h1 class="text-4xl text-blue-600 dark:text-blue-500 drop-shadow-sm" style="font-family: 'Lobster Two', cursive;">Delícias Urbanas</h1>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
-                    <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
-                        <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
-                    </div>
-                </div>
-
-                <!-- Autenticação do Usuário via RGF -->
-                <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 sm:p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
-                    <h2 class="block text-md font-semibold text-gray-800 dark:text-gray-100 mb-3">👤 1. Identificação</h2>
-                    <div class="grid sm:grid-cols-2 gap-3">
-                        <div>
-                            <input type="text" id="employeeRGF" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
-                        </div>
-                        <div>
-                            <input type="text" id="employeeName" placeholder="Preenchido automaticamente" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 font-semibold rounded-lg transition-colors" readonly>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="order-section" class="hidden scroll-mt-2">
-                    <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
-                        <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
-                            <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
-                        </div>
-                        <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
-                        <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+            <!-- ================= VISÃO DO USUÁRIO ================= -->
+            <div id="user-view" class="no-print">
+                <div id="form-container">
+                    <div class="text-center mb-6 mt-4">
+                        <h1 class="text-4xl text-blue-600 dark:text-blue-500 drop-shadow-sm" style="font-family: 'Lobster Two', cursive;">Delícias Urbanas</h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">O seu cardápio está servido!</p>
+                        <div id="week-badge-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mt-2 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors">
+                            <span>🍲</span> <span id="week-badge-text">Carregando cardápio...</span>
                         </div>
                     </div>
 
-                    <div id="existing-order-container" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border-2 border-green-100 dark:border-green-900/50 fade-in transition-colors">
+                    <!-- Autenticação do Usuário via RGF -->
+                    <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 sm:p-6 mb-4 border border-gray-100 dark:border-zinc-800 transition-colors">
+                        <h2 class="block text-md font-semibold text-gray-800 dark:text-gray-100 mb-3">👤 1. Identificação</h2>
+                        <div class="grid sm:grid-cols-2 gap-3">
+                            <div>
+                                <input type="text" id="employeeRGF" placeholder="Digite o seu RGF" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-bold transition-colors">
+                            </div>
+                            <div>
+                                <input type="text" id="employeeName" placeholder="Preenchido automaticamente" class="w-full px-4 py-3 border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50 text-gray-600 dark:text-gray-400 font-semibold rounded-lg transition-colors" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="order-section" class="hidden scroll-mt-2">
+                        <!-- Cardápio em TEXTO (acessível, extraído via OCR) -->
+                        <div id="menu-text-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-4 transition-colors hidden">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">📋 Cardápio da Semana</h3>
+                                <button type="button" id="speakMenuBtn" class="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" title="Ouvir o cardápio em voz alta">
+                                    🔊 Ouvir
+                                </button>
+                            </div>
+                            <div id="menu-text-list" class="space-y-2"></div>
+                        </div>
+
+                        <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
+                            <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
+                                <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
+                            </div>
+                            <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
+                            <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
+                            </div>
+                        </div>
+
+                        <div id="existing-order-container" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border-2 border-green-100 dark:border-green-900/50 fade-in transition-colors">
                         <div class="text-center mb-6">
                             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 mb-4">
                                 <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -265,7 +284,7 @@
                             <p class="text-gray-600 dark:text-gray-400 mt-2 font-medium">Você já realizou este pedido. Consulte abaixo as suas escolhas:</p>
                         </div>
                         <div id="existing-order-details" class="space-y-3 mb-4"></div>
-                    </div>
+                        </div>
 
                     <div id="order-wizard-container" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-zinc-800 mb-4 transition-colors">
                         <div id="order-wizard">
@@ -447,6 +466,7 @@
                                     <div class="mt-3 flex gap-2">
                                         <button type="button" id="resetUpload" class="px-3 py-1 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded hover:bg-gray-300 dark:hover:bg-zinc-600">Redefinir</button>
                                         <button type="button" id="cropImageBtn" class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded hover:bg-blue-700 dark:hover:bg-blue-400">Recortar Imagem</button>
+                                        <button type="button" id="ocrImageBtn" class="px-3 py-1 bg-purple-600 dark:bg-purple-500 text-white text-sm rounded hover:bg-purple-700 dark:hover:bg-purple-400">🔍 Extrair Texto (OCR)</button>
                                     </div>
                                 </div>
                             </div>
@@ -602,6 +622,21 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal OCR - Confirmação da Extração -->
+    <div id="ocr-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content w-full max-w-3xl h-[85vh] flex flex-col p-4 sm:p-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white shrink-0 flex items-center gap-2">🔍 Confirmar Extração do Cardápio</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 shrink-0">Revise os pratos extraídos. Edite o que for necessário e confirme para salvar.</p>
+            <div class="flex-1 overflow-auto space-y-3" id="ocr-days-container">
+                <!-- Dias gerados via JS -->
+            </div>
+            <div class="mt-4 flex justify-end space-x-3 shrink-0">
+                <button type="button" id="cancel-ocr-btn" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
+                <button type="button" id="confirm-ocr-btn" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">✅ Confirmar e Salvar Cardápio</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Modal Editar Pedido -->
     <div id="edit-order-modal" class="modal-overlay hidden no-print">
@@ -703,6 +738,8 @@
     <script src="js/notificationChecker.js"></script>
     <script src="js/notificationTrigger.js"></script>
     <script src="js/pushRegistration.js"></script>
+    <script src="js/ocr.js"></script>
+    <script src="js/fontzoom.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
