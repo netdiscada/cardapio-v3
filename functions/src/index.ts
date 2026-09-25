@@ -9,7 +9,6 @@ const messaging = admin.messaging();
 // Helpers
 // ============================================================
 const TOPIC_FUNCIONARIOS = "funcionarios";
-const TOPIC_ADMIN = "admin";
 
 async function sendToTopic(topic: string, title: string, body: string, data?: Record<string, string>) {
   const message = {
@@ -106,7 +105,7 @@ async function getAdminTokens(): Promise<string[]> {
   return snap.docs.map(d => d.id);
 }
 
-async getFuncionarioTokens(): Promise<string[]> {
+async function getFuncionarioTokens(): Promise<string[]> {
   const snap = await db.collection("deviceTokens")
     .where("role", "==", "funcionario")
     .where("active", "==", true)

@@ -196,9 +196,34 @@
         #rgf-consult-result { overflow-wrap: anywhere; }
         
         @media print {
-            .no-print { display: none !important; }
-        }
-    </style>
+                    .no-print { display: none !important; }
+                }
+
+                /* ===== v3.3: Visualizador fullscreen do cardápio ===== */
+                /* Wizard dentro do viewer: cartão claro flutuando no rodapé escuro */
+                #menu-viewer-buttons > #order-wizard-container {
+                    background: #ffffff !important;
+                    border: none !important;
+                    border-radius: 1rem 1rem 0 0;
+                    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+                    margin-bottom: 0 !important;
+                    max-height: 45vh;
+                    overflow-y: auto;
+                }
+                /* Botões do wizard grandes e fáceis de tocar (idosos) */
+                #menu-viewer-buttons .wizard-btn {
+                    min-height: 56px;
+                    font-size: 1rem;
+                }
+                /* Barra de progresso do wizard visível no fundo escuro */
+                #menu-viewer-buttons #wizard-progress span {
+                    box-shadow: 0 0 4px rgba(255,255,255,0.3);
+                }
+                /* Container do submit (revisar pedido) também entra no rodapé */
+                #menu-viewer-buttons > #submitButtonContainer {
+                    margin-top: 0.5rem;
+                }
+            </style>
     <!-- Firebase (build compat, v11.6.1 identica ao v1.x) -->
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
@@ -218,7 +243,7 @@
             <button id="darkModeToggle" class="text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
                 🌙 Modo Noturno
             </button>
-            <button id="fontZoomBtn" class="text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" title="Ajustar tamanho do texto">
+            <button id="fontZoomBtn" class="text-xs bg-white/90 dark:bg-zinc-900/90 text-gray-600 dark:text-gray-300 font-bold py-1 px-3 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors" title="Ajustar tamanho do texto do app">
                 🔍 Aa
             </button>
         </div>
@@ -254,25 +279,33 @@
                     </div>
 
                     <div id="order-section" class="hidden scroll-mt-2">
-                        <!-- Cardápio em TEXTO (acessível, extraído via OCR) -->
-                        <div id="menu-text-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-4 transition-colors hidden">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">📋 Cardápio da Semana</h3>
-                                <button type="button" id="speakMenuBtn" class="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" title="Ouvir o cardápio em voz alta">
-                                    🔊 Ouvir
-                                </button>
-                            </div>
-                            <div id="menu-text-list" class="space-y-2"></div>
-                        </div>
 
                         <div id="menu-image-container" class="mb-4 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 p-1 relative transition-colors min-h-[200px] flex items-center justify-center overflow-hidden">
                             <div id="menu-image-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-zinc-900 z-0 rounded-lg">
                                 <div class="w-10 h-10 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
                             </div>
-                            <img id="menu-image" src="" alt="Cardápio da Semana" class="w-full h-auto max-h-[75vh] object-contain cursor-pointer rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300">
-                            <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20">
+                            <div id="menu-image-wrapper" class="w-full h-[60vh] max-h-[75vh] overflow-auto touch-pan-x touch-pan-y relative z-10" style="touch-action: pinch-zoom;">
+                                <img id="menu-image" src="" alt="Cardápio da Semana" class="w-auto h-auto min-w-full min-h-full object-contain cursor-grab rounded-lg bg-white dark:bg-zinc-900 relative z-10 opacity-0 transition-opacity duration-300" style="touch-action: pinch-zoom;">
+                            </div>
+                            <div class="absolute top-2 right-2 bg-black/50 text-white p-2 rounded-full pointer-events-none shadow-sm backdrop-blur-md z-20" id="zoom-hint">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
                             </div>
+
+                        <!-- Botões rápidos de dia (sempre visíveis, fixos no topo da área de escolha) -->
+                        <div id="day-quick-pick" class="mb-4 p-2 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-800 transition-colors">
+                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 text-center">Toque no dia para ir direto →</p>
+                            <div class="flex flex-wrap justify-center gap-2" id="day-quick-buttons"></div>
+                        </div>
+
+                        <!-- Botões de escolha FIXOS na parte de baixo (aparecem ao tocar na imagem) -->
+                        <div id="menu-bottom-actions" class="hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-t border-gray-200 dark:border-zinc-800 shadow-lg no-print flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4 px-4 sm:px-6 pb-[env(safe-area-inset-bottom)] pointer-events-none">
+                            <div class="flex-1 sm:flex-none text-center sm:text-left pointer-events-auto">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Faça seu zoom na imagem, depois escolha:</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 justify-center pointer-events-auto" id="menu-bottom-options">
+                                <!-- Botões gerados via JS: um por opção do dia atual -->
+                            </div>
+                            <button id="close-menu-zoom-btn" class="w-full sm:w-auto px-4 py-2 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors pointer-events-auto">✕ Fechar zoom</button>
                         </div>
 
                         <div id="existing-order-container" class="hidden bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-5 mb-4 border-2 border-green-100 dark:border-green-900/50 fade-in transition-colors">
@@ -470,7 +503,6 @@
                                     <div class="mt-3 flex flex-wrap gap-2">
                                         <button type="button" id="resetUpload" class="px-3 py-1 bg-gray-200 dark:bg-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded hover:bg-gray-300 dark:hover:bg-zinc-600">Redefinir</button>
                                         <button type="button" id="cropImageBtn" class="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded hover:bg-blue-700 dark:hover:bg-blue-400">Recortar Imagem</button>
-                                        <button type="button" id="geminiOcrBtn" class="px-3 py-1 bg-purple-600 dark:bg-purple-500 text-white text-sm rounded hover:bg-purple-700 dark:hover:bg-purple-400">🤖 Ler com Gemini</button>
                                     </div>
                                 </div>
                             </div>
@@ -588,32 +620,49 @@
                         </section>
 
                         <!-- Configurações do Sistema (nova aba) -->
-                        <section id="settings-section" data-admin-panel="settings" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                            <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6">⚙️ Configurações do Sistema</h2>
-                            <div class="space-y-4">
-                                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-                                    <h3 class="font-bold text-blue-800 dark:text-blue-300 mb-2">🤖 Gemini Vision OCR</h3>
-                                    <p class="text-sm text-blue-700 dark:text-blue-400 mb-4">Configure a API Key para leitura automática de cardápios por IA. Free tier: 1.500 req/dia.</p>
-                                    <button id="openGeminiSettingsBtn" class="w-full sm:w-auto bg-purple-600 dark:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors cursor-pointer">⚙️ Abrir Configurações do Gemini OCR</button>
-                                </div>
-                                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-                                    <h3 class="font-bold text-green-800 dark:text-green-300 mb-2">📋 Sobre as Atualizações</h3>
-                                    <p class="text-sm text-green-700 dark:text-green-400 mb-2">O app verifica atualizações automaticamente. Para forçar atualização:</p>
-                                    <button id="checkUpdateBtn" class="w-full sm:w-auto bg-green-600 dark:bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">🔄 Verificar Atualizações Agora</button>
-                                    <p id="updateStatus" class="text-xs text-gray-500 dark:text-gray-400 mt-2"></p>
+                                    <section id="settings-section" data-admin-panel="settings" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
+                                        <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6">⚙️ Configurações do Sistema</h2>
+                                        <div class="space-y-4">
+                                            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                                                <h3 class="font-bold text-green-800 dark:text-green-300 mb-2">📋 Sobre as Atualizações</h3>
+                                                <p class="text-sm text-green-700 dark:text-green-400 mb-2">O app verifica atualizações automaticamente. Para forçar atualização:</p>
+                                                <button id="checkUpdateBtn" class="w-full sm:w-auto bg-green-600 dark:bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">🔄 Verificar Atualizações Agora</button>
+                                                <p id="updateStatus" class="text-xs text-gray-500 dark:text-gray-400 mt-2"></p>
+                                            </div>
+                                        </div>
+                                    </section>
                                 </div>
                             </div>
-                        </section>
-        </div>
     </div>
 
     <!-- Modals -->
-    <!-- Modal de Zoom da Imagem -->
-    <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
-        <div class="modal-content">
-            <img id="zoomed-image" src="" alt="Imagem Ampliada">
+        <!-- VISUALIZADOR DO CARDÁPIO (fullscreen, pinch-zoom, botões fixos) -->
+        <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
+            <!-- Topo: fecha + controles de zoom -->
+            <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
+                <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="viewer-zoom-out" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Diminuir">−</button>
+                    <button type="button" id="viewer-reset" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-sm font-bold active:scale-90 transition-transform" title="Tamanho original">1:1</button>
+                    <button type="button" id="viewer-zoom-in" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Aumentar">+</button>
+                </div>
+            </div>
+            <!-- Palco: imagem com pinch/pan -->
+            <div id="menu-viewer-stage" class="flex-1 overflow-hidden relative flex items-center justify-center" style="touch-action:none; cursor:grab;">
+                <img id="menu-viewer-img" src="" alt="Cardápio ampliado" class="max-w-full max-h-full object-contain select-none pointer-events-none" style="transform-origin:center center; will-change:transform;" draggable="false">
+            </div>
+            <!-- Rodapé: botões de escolha (FIXOS, sempre visíveis) -->
+            <div id="menu-viewer-buttons" class="shrink-0 p-3 pt-2" style="background:rgba(0,0,0,0.3); padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+                <!-- order-wizard-container é movido pra cá via JS quando o viewer abre -->
+            </div>
         </div>
-    </div>
+
+        <!-- Modal de Zoom da Imagem (legado, mantido para compat) -->
+        <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
+            <div class="modal-content">
+                <img id="zoomed-image" src="" alt="Imagem Ampliada">
+            </div>
+        </div>
     
     <!-- Modal de Relatório Público -->
     <div id="public-report-modal" class="modal-overlay hidden no-print">
@@ -645,34 +694,6 @@
         </div>
     </div>
 
-    <!-- Modal GEMINI OCR - Confirmação da Extração via IA -->
-    <div id="gemini-ocr-modal" class="modal-overlay hidden no-print">
-        <div class="modal-content w-full max-w-3xl h-[85vh] flex flex-col p-4 sm:p-6">
-            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white shrink-0 flex items-center gap-2">🤖 Confirmar Leitura do Gemini</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 shrink-0">Revise os pratos lidos pela IA. Edite o que for necessário e confirme para salvar.</p>
-            <div class="flex-1 overflow-auto space-y-3" id="gemini-ocr-days-container">
-                <!-- Dias gerados via JS -->
-            </div>
-            <div class="mt-4 flex justify-end space-x-3 shrink-0">
-                <button type="button" id="cancel-gemini-ocr-btn" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Cancelar</button>
-                <button type="button" id="confirm-gemini-ocr-btn" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">✅ Salvar Texto do Cardápio</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Configurações Gemini OCR (aba no painel ADM) -->
-    <div id="gemini-ocr-settings-modal" class="modal-overlay hidden no-print">
-        <div class="modal-content w-full max-w-2xl h-[85vh] flex flex-col p-4 sm:p-6">
-            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white shrink-0">⚙️ Configurações do Gemini OCR</h2>
-            <div class="flex-1 overflow-auto" id="gemini-ocr-settings-content">
-                <!-- Renderizado via geminiOcrRenderSettingsTab() -->
-            </div>
-            <div class="mt-4 flex justify-end space-x-3 shrink-0">
-                <button type="button" id="close-gemini-settings-btn" class="cancel-modal-btn px-4 py-2 bg-gray-300 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors cursor-pointer">Fechar</button>
-            </div>
-        </div>
-    </div>
-    
     <!-- Modal Editar Pedido -->
     <div id="edit-order-modal" class="modal-overlay hidden no-print">
         <div class="modal-content w-full max-w-lg">
@@ -771,10 +792,10 @@
     <script src="js/admin.js"></script>
     <script src="js/userhelp.js"></script>
     <script src="js/notificationChecker.js"></script>
-    <script src="js/notificationTrigger.js"></script>
-    <script src="js/pushRegistration.js"></script>
-    <script src="js/gemini-ocr.js"></script>
-    <script src="js/fontzoom.js"></script>
-    <script src="js/app.js"></script>
+        <script src="js/notificationTrigger.js"></script>
+        <script src="js/pushRegistration.js"></script>
+        <script src="js/fontzoom.js"></script>
+        <script src="js/menu-viewer.js"></script>
+        <script src="js/app.js"></script>
 </body>
 </html>
