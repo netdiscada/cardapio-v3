@@ -744,117 +744,114 @@
                     </button>
                 </div>
                 <div id="ordersTableContainer" class="overflow-x-auto"><p class="text-gray-500 dark:text-gray-400 font-medium">A carregar pedidos...</p></div>
-            </section>
-                    </div>
+                            </section>
+
+                            <!-- ===== ABA DE NOTIFICAÇÕES (NOVA) ===== -->
+                            <section id="notifications-section" data-admin-panel="notifications" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
+                                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6 flex items-center gap-2">🔔 Central de Notificações</h2>
+       
+                                <!-- Configurações Globais -->
+                                <div class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl">
+                                    <h3 class="font-bold text-blue-800 dark:text-blue-300 mb-4">⚙️ Configurações Globais</h3>
+                                    <div class="grid sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Timer padrão lembrete (minutos)</label>
+                                            <input type="number" id="globalReminderTimer" min="1" max="1440" value="15" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tempo padrão para lembrete de quem não pediu (padrão: 15 min)</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Verificação diária "Todos pediram" (hora)</label>
+                                            <input type="time" id="globalDailyCheckTime" value="10:00" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Horário da verificação automática (padrão: 10:00 BRT)</p>
+                                        </div>
                                     </div>
-                                </section>
+                                    <div class="mt-4 flex gap-2">
+                                        <button id="saveGlobalNotifConfig" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer">💾 Salvar Configurações Globais</button>
+                                        <button id="testGlobalNotification" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">🔔 Testar Notificação Global</button>
+                                    </div>
+                                </div>
 
-                                <!-- ===== ABA DE NOTIFICAÇÕES (NOVA) ===== -->
-                                <section id="notifications-section" data-admin-panel="notifications" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                    <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6 flex items-center gap-2">🔔 Central de Notificações</h2>
-        
-                    <!-- Configurações Globais -->
-                    <div class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl">
-                        <h3 class="font-bold text-blue-800 dark:text-blue-300 mb-4">⚙️ Configurações Globais</h3>
-                        <div class="grid sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Timer padrão lembrete (minutos)</label>
-                                <input type="number" id="globalReminderTimer" min="1" max="1440" value="15" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tempo padrão para lembrete de quem não pediu (padrão: 15 min)</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Verificação diária "Todos pediram" (hora)</label>
-                                <input type="time" id="globalDailyCheckTime" value="10:00" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Horário da verificação automática (padrão: 10:00 BRT)</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex gap-2">
-                            <button id="saveGlobalNotifConfig" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer">💾 Salvar Configurações Globais</button>
-                            <button id="testGlobalNotification" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">🔔 Testar Notificação Global</button>
-                        </div>
-                    </div>
+                                <!-- Envio Manual -->
+                                <div class="mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/30 rounded-xl">
+                                    <h3 class="font-bold text-purple-800 dark:text-purple-300 mb-4">📝 Envio Manual de Notificação</h3>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Destinatários</label>
+                                            <select id="manualNotifTarget" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
+                                                <option value="all">👥 Todos (Funcionários + Admins)</option>
+                                                <option value="funcionario">👤 Apenas Funcionários</option>
+                                                <option value="admin">👑 Apenas Admins</option>
+                                                <option value="specific">🎯 Funcionário Específico (RGF)</option>
+                                            </select>
+                                        </div>
+                                        <div id="specificRGFContainer" class="hidden">
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">RGF do Funcionário</label>
+                                            <input type="text" id="manualNotifRGF" inputmode="numeric" placeholder="Ex: 22823" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Título da Notificação</label>
+                                            <input type="text" id="manualNotifTitle" placeholder="Ex: Novo Cardápio Disponível!" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Mensagem</label>
+                                            <textarea id="manualNotifBody" rows="3" placeholder="Digite a mensagem que deseja enviar..." class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"></textarea>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button id="sendManualNotification" class="px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white font-bold rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors cursor-pointer">📤 Enviar Notificação</button>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    <!-- Envio Manual -->
-                    <div class="mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/30 rounded-xl">
-                        <h3 class="font-bold text-purple-800 dark:text-purple-300 mb-4">📝 Envio Manual de Notificação</h3>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Destinatários</label>
-                                <select id="manualNotifTarget" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                                    <option value="all">👥 Todos (Funcionários + Admins)</option>
-                                    <option value="funcionario">👤 Apenas Funcionários</option>
-                                    <option value="admin">👑 Apenas Admins</option>
-                                    <option value="specific">🎯 Funcionário Específico (RGF)</option>
-                                </select>
-                            </div>
-                            <div id="specificRGFContainer" class="hidden">
-                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">RGF do Funcionário</label>
-                                <input type="text" id="manualNotifRGF" inputmode="numeric" placeholder="Ex: 22823" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Título da Notificação</label>
-                                <input type="text" id="manualNotifTitle" placeholder="Ex: Novo Cardápio Disponível!" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Mensagem</label>
-                                <textarea id="manualNotifBody" rows="3" placeholder="Digite a mensagem que deseja enviar..." class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"></textarea>
-                            </div>
-                            <div class="flex gap-2">
-                                <button id="sendManualNotification" class="px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white font-bold rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors cursor-pointer">📤 Enviar Notificação</button>
-                            </div>
-                        </div>
-                    </div>
+                                <!-- Lista de Dispositivos Registrados -->
+                                <div class="mb-8">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="font-bold text-gray-700 dark:text-gray-200">📱 Dispositivos Registrados</h3>
+                                        <button id="refreshDeviceList" class="px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer">🔄 Atualizar Lista</button>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden">
+                                            <thead>
+                                                <tr class="bg-gray-50 dark:bg-zinc-800/80">
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Token/Endpoint</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">RGF</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Role</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Plataforma</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Status</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Timer (min)</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Tipos Ativos</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="deviceTokensTableBody">
+                                                <tr><td colspan="8" class="py-8 text-center text-gray-500 dark:text-gray-400">Carregando dispositivos...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
 
-                    <!-- Lista de Dispositivos Registrados -->
-                    <div class="mb-8">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-700 dark:text-gray-200">📱 Dispositivos Registrados</h3>
-                            <button id="refreshDeviceList" class="px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer">🔄 Atualizar Lista</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden">
-                                <thead>
-                                    <tr class="bg-gray-50 dark:bg-zinc-800/80">
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Token/Endpoint</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">RGF</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Role</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Plataforma</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Status</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Timer (min)</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Tipos Ativos</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="deviceTokensTableBody">
-                                    <tr><td colspan="8" class="py-8 text-center text-gray-500 dark:text-gray-400">Carregando dispositivos...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                <!-- Logs de Notificações Enviadas -->
+                                <div>
+                                    <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-4">📋 Histórico Recente (últimas 50)</h3>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden">
+                                            <thead>
+                                                <tr class="bg-gray-50 dark:bg-zinc-800/80">
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Data/Hora</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Tipo</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Destinatários</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Título</th>
+                                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="notificationHistoryBody">
+                                                <tr><td colspan="5" class="py-8 text-center text-gray-500 dark:text-gray-400">Carregando histórico...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
 
-                    <!-- Logs de Notificações Enviadas -->
-                    <div>
-                        <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-4">📋 Histórico Recente (últimas 50)</h3>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden">
-                                <thead>
-                                    <tr class="bg-gray-50 dark:bg-zinc-800/80">
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Data/Hora</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Tipo</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Destinatários</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Título</th>
-                                        <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="notificationHistoryBody">
-                                    <tr><td colspan="5" class="py-8 text-center text-gray-500 dark:text-gray-400">Carregando histórico...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Modals -->
+                            <!-- Modals -->
     <!-- Modal de Zoom da Imagem -->
     <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
         <div class="modal-content">
