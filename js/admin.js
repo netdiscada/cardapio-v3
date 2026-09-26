@@ -1064,4 +1064,15 @@
       tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-gray-500">Erro ao carregar</td></tr>';
     }
   }
+
+  // ===== Exporta funções para escopo global =====
+  global.loadAndDisplayMenu = loadAndDisplayMenu;
+  global.loadAdminData = loadAdminData;
+  global.loadAndRenderEmployees = loadAndRenderEmployees;
+  global.toggleDeviceTokenActive = toggleDeviceTokenActive;
+  global.updateDeviceTokenTimer = updateDeviceTokenTimer;
+  global.testDeviceNotification = testDeviceNotification;
+  global.sendManualNotification = sendManualNotification;
+  global.refreshDeviceTokensList = refreshDeviceTokensList;
+  global.loadNotificationHistory = loadNotificationHistory;
 })(window);
