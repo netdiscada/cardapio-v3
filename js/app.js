@@ -417,10 +417,10 @@
     }
 
     // ===== v3: Abas do painel ADM (Sidebar/TabBar) =====
-    const adminTabsNav = document.getElementById('admin-tabs');
-    if (adminTabsNav) {
-      const panelIds = { menu: 'menu-management-section', employees: 'employee-management-section', orders: 'order-status-section' };
-      const extraOrderPanel = document.getElementById('orders-section');
+        const adminTabsNav = document.getElementById('admin-tabs');
+        if (adminTabsNav) {
+          const panelIds = { menu: 'menu-management-section', employees: 'employee-management-section', orders: 'order-status-section', notifications: 'notifications-section' };
+          const extraOrderPanel = document.getElementById('orders-section');
 
       const showPanel = (name) => {
         // Esconde/mostra painéis conforme a aba ativa
