@@ -717,20 +717,351 @@
     // Enter tambem dispara via submit; consulta ao clicar fora (blur) NAO, para evitar consultas acidentais
   }
 
-  global.loadAndDisplayMenu = loadAndDisplayMenu;
-  global.loadAdminData = loadAdminData;
-  global.loadAndRenderEmployees = loadAndRenderEmployees;
-  global.handleAddEmployee = handleAddEmployee;
-  global.handleDeleteEmployee = handleDeleteEmployee;
-  global.openEmployeeEditModal = openEmployeeEditModal;
-  global.handleSaveEmployeeChanges = handleSaveEmployeeChanges;
-  global.handleDeleteOrder = handleDeleteOrder;
-  global.openPublicReportModal = openPublicReportModal;
-  global.generateAndShareReport = generateAndShareReport;
-  global.handleWhatsAppNotification = handleWhatsAppNotification;
-  global.renderHolidayCalendar = renderHolidayCalendar;
-  global.bindHolidayCalendarHandlers = bindHolidayCalendarHandlers;
-  global.bindEmployeeSearchHandler = bindEmployeeSearchHandler;
-  global.renderHolidayCheckboxes = renderHolidayCheckboxes;
-  global.bindRgfConsultHandler = bindRgfConsultHandler;
+  // ===== CENTRAL DE NOTIFICAÇÕES ADMIN =====
+  
+  // Estado local para configurações de notificação
+  let globalNotifConfig = {
+    reminderTimer: 15,
+    dailyCheckTime: '10:00'
+  };
+
+  // Carrega e renderiza a aba de notificações
+  async function loadAndRenderNotifications() {
+    const st = S();
+    if (!auth.currentUser) return;
+
+    // Carrega configurações globais salvas
+    try {
+      const configDoc = await fb.getDoc(fb.doc(db, 'config', 'notifications'));
+      if (configDoc.exists()) {
+        globalNotifConfig = { ...globalNotifConfig, ...configDoc.data() };
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar config notificações:', e);
+    }
+
+    // Preenche campos
+    document.getElementById('globalReminderTimer').value = globalNotifConfig.reminderTimer || 15;
+    document.getElementById('globalDailyCheckTime').value = globalNotifConfig.dailyCheckTime || '10:00';
+
+    // Carrega lista de dispositivos
+    await refreshDeviceTokensList();
+
+    // Carrega histórico
+    await loadNotificationHistory();
+
+    // Bind events
+    bindNotificationEvents();
+  }
+
+  function bindNotificationEvents() {
+    // Config globais
+    document.getElementById('saveGlobalNotifConfig')?.addEventListener('click', saveGlobalNotifConfig);
+    document.getElementById('testGlobalNotification')?.addEventListener('click', () => testGlobalNotification());
+    document.getElementById('sendManualNotification')?.addEventListener('click', sendManualNotification);
+    document.getElementById('refreshDeviceList')?.addEventListener('click', refreshDeviceTokensList);
+    
+    // Toggle RGF específico
+    document.getElementById('manualNotifTarget')?.addEventListener('change', (e) => {
+      document.getElementById('specificRGFContainer').classList.toggle('hidden', e.target.value !== 'specific');
+    });
+  }
+
+  async function saveGlobalNotifConfig() {
+    const btn = document.getElementById('saveGlobalNotifConfig');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Salvando...';
+
+    try {
+      const reminderTimer = parseInt(document.getElementById('globalReminderTimer').value) || 15;
+      const dailyCheckTime = document.getElementById('globalDailyCheckTime').value || '10:00';
+
+      globalNotifConfig = { reminderTimer, dailyCheckTime };
+
+      await fb.setDoc(fb.doc(db, 'config', 'notifications'), globalNotifConfig, { merge: true });
+      
+      // Atualiza o timer no notificationChecker se estiver rodando
+      if (global.notificationChecker && typeof global.notificationChecker.setReminderTimer === 'function') {
+        global.notificationChecker.setReminderTimer(reminderTimer * 60 * 1000);
+      }
+
+      showToast('Configurações globais salvas!', 'success');
+    } catch (e) {
+      console.error('Erro ao salvar config:', e);
+      showToast('Erro ao salvar configurações', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  async function refreshDeviceTokensList() {
+    const tbody = document.getElementById('deviceTokensTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500 dark:text-gray-400">Carregando...</td></tr>';
+
+    try {
+      const snap = await fb.getDocs(fb.collection(db, 'deviceTokens'));
+      const tokens = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          token: d.id,
+          rgf: data.rgf || '—',
+          role: data.role || 'funcionario',
+          platform: data.platform || 'android',
+          active: data.active === true,
+          reminderTimer: data.reminderTimer || globalNotifConfig.reminderTimer || 15,
+          notificationTypes: data.notificationTypes || { new_menu: true, new_order: true, all_ordered: true },
+          updatedAt: data.updatedAt
+        };
+      });
+
+      if (tokens.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500 dark:text-gray-400">Nenhum dispositivo registrado</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = tokens.map(t => `
+        <tr class="border-b dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+          <td class="py-2 px-3 font-mono text-xs text-gray-600 dark:text-gray-400 truncate max-w-[150px]">${t.token.substring(0,30)}...</td>
+          <td class="py-2 px-3 font-mono text-sm font-bold text-gray-800 dark:text-gray-200">${t.rgf}</td>
+          <td class="py-2 px-3">
+            <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full ${
+              t.role === 'admin' 
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+            }">${t.role === 'admin' ? '👑 Admin' : '👤 Funcionário'}</span>
+          </td>
+          <td class="py-2 px-3 text-sm">
+            <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full ${
+              t.platform === 'web'
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+            }">${t.platform === 'web' ? '🌐 Web' : '📱 Android'}</span>
+          </td>
+          <td class="py-2 px-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" ${t.active ? 'checked' : ''} 
+                onchange="global.toggleDeviceTokenActive('${t.token}', this.checked)"
+                class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+              <span class="text-sm font-medium ${t.active ? 'text-green-600' : 'text-red-600'}">${t.active ? 'Ativo' : 'Inativo'}</span>
+            </label>
+          </td>
+          <td class="py-2 px-3">
+            <input type="number" min="1" max="1440" value="${t.reminderTimer}" 
+              onchange="global.updateDeviceTokenTimer('${t.token}', this.value)"
+              class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-center">
+          </td>
+          <td class="py-2 px-3 text-xs">
+            <div class="flex flex-wrap gap-1">
+              ${Object.entries(t.notificationTypes || {}).map(([key, enabled]) => `
+                <label class="flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" ${enabled ? 'checked' : ''} disabled class="w-3 h-3">
+                  <span class="${enabled ? 'text-green-600' : 'text-gray-400 line-through'}">${key}</span>
+                </label>
+              `).join('')}
+            </div>
+          </td>
+          <td class="py-2 px-3">
+            <div class="flex gap-1">
+              <button onclick="global.testDeviceNotification('${t.token}')" class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50">🔔 Testar</button>
+              <button onclick="global.toggleDeviceTokenActive('${t.token}', false)" class="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50">Desativar</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+    } catch (e) {
+      console.error('Erro ao carregar deviceTokens:', e);
+      tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-red-500">Erro ao carregar</td></tr>';
+    }
+  }
+
+  async function toggleDeviceTokenActive(token, active) {
+    try {
+      await fb.updateDoc(fb.doc(db, 'deviceTokens', token), { active });
+      showToast(active ? 'Dispositivo ativado' : 'Dispositivo desativado', 'success');
+    } catch (e) {
+      console.error('Erro toggle:', e);
+      showToast('Erro ao alterar status', 'error');
+      // Reverte UI
+      await refreshDeviceTokensList();
+    }
+  }
+
+  async function updateDeviceTokenTimer(token, value) {
+    const timer = parseInt(value) || 15;
+    try {
+      await fb.updateDoc(fb.doc(db, 'deviceTokens', token), { reminderTimer: timer });
+      showToast('Timer atualizado', 'success');
+    } catch (e) {
+      console.error('Erro timer:', e);
+      showToast('Erro ao atualizar timer', 'error');
+      await refreshDeviceTokensList();
+    }
+  }
+
+  async function testDeviceNotification(token) {
+    try {
+      const res = await fetch('https://cardapio-push.menino-belu90.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetRole: 'admin', // envia pra admin (você) para testar
+          title: '🧪 Teste de Notificação',
+          body: 'Esta é uma notificação de teste enviada do painel admin',
+          data: { type: 'test', timestamp: Date.now() }
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.totalSent > 0) {
+        showToast('Notificação de teste enviada!', 'success');
+      } else {
+        showToast('Falha no teste: ' + JSON.stringify(data), 'error');
+      }
+    } catch (e) {
+      console.error('Erro teste:', e);
+      showToast('Erro ao enviar teste', 'error');
+    }
+  }
+
+  async function sendManualNotification() {
+    const btn = document.getElementById('sendManualNotification');
+    const target = document.getElementById('manualNotifTarget').value;
+    const title = document.getElementById('manualNotifTitle').value.trim();
+    const body = document.getElementById('manualNotifBody').value.trim();
+
+    if (!title || !body) {
+      showToast('Preencha título e mensagem', 'error');
+      return;
+    }
+
+    let rgf = null;
+    if (target === 'specific') {
+      rgf = document.getElementById('manualNotifRGF').value.trim();
+      if (!rgf) {
+        showToast('Digite o RGF do funcionário', 'error');
+        return;
+      }
+    }
+
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Enviando...';
+
+    try {
+      const payload = {
+        targetRole: target === 'admin' ? 'admin' : 'funcionario',
+        title,
+        body,
+        data: { type: 'manual', adminSent: true, timestamp: Date.now() }
+      };
+
+      if (target === 'all') {
+        payload.notifyAdminAlso = true;
+      } else if (target === 'specific' && rgf) {
+        // Para específico, precisamos buscar o token desse RGF
+        const snap = await fb.getDocs(fb.query(
+          fb.collection(db, 'deviceTokens'),
+          fb.where('rgf', '==', rgf),
+          fb.where('active', '==', true)
+        ));
+        if (snap.empty) {
+          showToast('Nenhum dispositivo ativo encontrado para este RGF', 'error');
+          return;
+        }
+        // Envia para cada token encontrado
+        for (const doc of snap.docs) {
+          await sendToSpecificToken(doc.id, title, body);
+        }
+        showToast(`Notificação enviada para ${snap.size} dispositivo(s) do RGF ${rgf}`, 'success');
+        return;
+      }
+
+      const res = await fetch('https://cardapio-push.menino-belu90.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        showToast(`Notificação enviada! (${data.totalSent} sucessos, ${data.totalFailed} falhas)`, data.totalFailed > 0 ? 'warning' : 'success');
+        await loadNotificationHistory(); // Atualiza histórico
+      } else {
+        showToast('Falha: ' + (data.error || JSON.stringify(data)), 'error');
+      }
+    } catch (e) {
+      console.error('Erro envio manual:', e);
+      showToast('Erro ao enviar: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  async function sendToSpecificToken(token, title, body) {
+    try {
+      const serviceAccount = JSON.parse(localStorage.getItem('firebaseServiceAccount') || '{}');
+      // Como não temos a service account no client, usamos o Worker
+      await fetch('https://cardapio-push.menino-belu90.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetRole: 'funcionario',
+          title,
+          body,
+          data: { type: 'manual', adminSent: true },
+          // O Worker vai filtrar pelo token se passarmos
+          specificToken: token
+        })
+      });
+    } catch (e) {
+      console.error('Erro token específico:', e);
+    }
+  }
+
+  async function loadNotificationHistory() {
+    const tbody = document.getElementById('notificationHistoryBody');
+    if (!tbody) return;
+    
+    try {
+      const snap = await fb.getDocs(fb.query(
+        fb.collection(db, 'notificationLogs'),
+        fb.orderBy('sentAt', 'desc'),
+        fb.limit(50)
+      ));
+
+      if (snap.empty) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-gray-500 dark:text-gray-400">Nenhum histórico</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = snap.docs.map(d => {
+        const data = d.data();
+        const date = data.sentAt?.toDate ? data.sentAt.toDate().toLocaleString('pt-BR') : '—';
+        return `
+          <tr class="border-b dark:border-zinc-800">
+            <td class="py-2 px-3 text-sm text-gray-600 dark:text-gray-400">${date}</td>
+            <td class="py-2 px-3">
+              <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300">${data.type || 'manual'}</span>
+            </td>
+            <td class="py-2 px-3 text-sm text-gray-700 dark:text-gray-300">${data.targetRole || 'funcionario'}${data.notifyAdminAlso ? ' + admin' : ''}</td>
+            <td class="py-2 px-3 text-sm text-gray-700 dark:text-gray-300 truncate max-w-xs">${data.title || '—'}</td>
+            <td class="py-2 px-3">
+              <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full ${data.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                ${data.success ? `✅ ${data.sentCount || 0} enviados` : '❌ Falhou'}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+    } catch (e) {
+      console.warn('Erro ao carregar histórico:', e);
+      tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-gray-500">Erro ao carregar</td></tr>';
+    }
+  }
 })(window);
