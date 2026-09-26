@@ -79,7 +79,7 @@
         }
 
         .dark .modal-content {
-          background-color: #09090b !important;
+          background-color: #09090b !important; /* Garante sobrescrita */
           border-color: #27272a !important;
         }
 
@@ -195,37 +195,190 @@
         @media print {
             .no-print { display: none !important; }
         }
-
-        /* ===== v3.3: Visualizador fullscreen do cardápio ===== */
-        /* Wizard dentro do viewer: cartão claro flutuando no rodapé escuro */
-        #menu-viewer-buttons > #order-wizard-container {
-            background: #ffffff !important;
-            border: none !important;
-            border-radius: 1rem 1rem 0 0;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-            margin-bottom: 0 !important;
-            max-height: 45vh;
-            overflow-y: auto;
-        }
-        /* Botões do wizard grandes e fáceis de tocar (idosos) */
-        #menu-viewer-buttons .wizard-btn {
-            min-height: 56px;
-            font-size: 1rem;
-        }
-        /* Barra de progresso do wizard visível no fundo escuro */
-        #menu-viewer-buttons #wizard-progress span {
-            box-shadow: 0 0 4px rgba(255,255,255,0.3);
-        }
-        /* Container do submit (revisar pedido) também entra no rodapé */
-        #menu-viewer-buttons > #submitButtonContainer {
-            margin-top: 0.5rem;
-        }
     </style>
     <!-- Firebase (build compat, v11.6.1 identica ao v1.x) -->
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
     <link rel="stylesheet" href="css/styles.css">
+<style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Poppins', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.3s ease; }
+        .modal-content { padding: 2rem; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-height: 90vh; overflow-y: auto; width: 90%; max-width: 500px; }
+        
+        html.dark { background-color: #000000; color: #f4f4f5; }
+        .dark .modal-content { background-color: #09090b; border: 1px solid #27272a; color: #f4f4f5; }
+        html:not(.dark) .modal-content { background-color: white; color: #1f2937; }
+        
+        #image-zoom-modal .modal-content { width: auto; max-width: 95%; padding: 0.5rem; background: none !important; box-shadow: none; border: none; }
+        #zoomed-image { max-width: 90vw; max-height: 85vh; border-radius: 0.75rem; }
+        
+        input:read-only { cursor: not-allowed; }
+        html:not(.dark) input:read-only { background-color: #f3f4f6; }
+        .dark input:read-only { background-color: #18181b !important; color: #a1a1aa; border-color: #27272a; }
+
+        /* Wizard Buttons */
+        .wizard-btn { transition: all 0.2s ease-in-out; }
+        .wizard-btn:hover { transform: scale(1.03); border-color: #3b82f6; }
+        .wizard-btn:active { transform: scale(0.98); }
+        .dark .wizard-btn:active { background-color: #1e3a8a; }
+        html:not(.dark) .wizard-btn:active { background-color: #eff6ff; }
+
+        /* APRIMORAMENTO: Refinamento de dark mode para consistência */
+        .dark {
+          --tw-border-opacity: 0.1;
+          --tw-bg-opacity: 0.9;
+          --tw-shadow: 0 0 #0000;
+        }
+
+        .dark .modal-content {
+          background-color: #09090b !important; /* Garante sobrescrita */
+          border-color: #27272a !important;
+        }
+
+        .dark #cropper-container,
+        .dark #imagePreviewContainer {
+          background-color: #09090b !important;
+        }
+
+        .dark .wizard-btn:active {
+          background-color: #1e3a8a !important;
+        }
+
+        .dark input:read-only {
+          background-color: #18181b !important;
+          color: #a1a1aa !important;
+          border-color: #27272a !important;
+        }
+
+        #cropper-container { max-height: 50vh; width: 100%; display: flex; justify-content: center; align-items: center; background-color: #f3f4f6; }
+        .dark #cropper-container { background-color: #18181b; }
+        #cropper-image { display: block; max-width: 100%; max-height: 100%; }
+
+        /* Toast Notifications */
+        #app-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #333; color: white; padding: 12px 24px; border-radius: 8px; z-index: 2000; opacity: 0; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; pointer-events: none; transform: translateX(-50%) translateY(20px); }
+        #app-toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        #app-toast.success { background-color: #22c55e; }
+        #app-toast.error { background-color: #ef4444; }
+        #app-toast.info { background-color: #3b82f6; }
+
+        /* ===== Painel ADM: Bottom Bar fixa (Sem rolagem) ===== */
+        #admin-tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #e5e7eb;
+            padding: 0.5rem 0.75rem;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+        html.dark #admin-tabs {
+            background-color: rgba(24, 24, 27, 0.95);
+            border-top-color: #27272a;
+        }
+        .admin-tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 0.4rem 0.2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.15s ease, background-color 0.15s ease;
+            gap: 0.15rem;
+            text-align: center;
+        }
+        html.dark .admin-tab-btn { color: #a1a1aa; }
+        .admin-tab-btn:hover { color: #2563eb; background-color: rgba(37, 99, 235, 0.05); }
+        html.dark .admin-tab-btn:hover { color: #60a5fa; background-color: rgba(96, 165, 250, 0.05); }
+        .admin-tab-btn.active { color: #2563eb; background-color: rgba(37, 99, 235, 0.1); font-weight: 700; }
+        html.dark .admin-tab-btn.active { color: #60a5fa; background-color: rgba(96, 165, 250, 0.15); }
+
+        /* Badge de contagem de pedidos na aba Pedidos */
+        .admin-tab-btn { position: relative; }
+        .admin-badge {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.5rem;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            padding: 0 0.3rem;
+            background-color: #ef4444;
+            color: #ffffff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1.15rem;
+            border-radius: 9999px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+        }
+        .admin-badge.hidden { display: none; }
+
+        /* Espaçamento inferior no admin-view para o conteúdo não ficar coberto pela barra fixa */
+        #admin-view:not(.hidden) {
+            padding-bottom: 5rem;
+        }
+        #user-view:not(.hidden) {
+            padding-bottom: 5rem;
+        }
+        /* Bottom bar do funcionário: controlada por classe no body (show-user-tabs),
+           alternada pelo JS junto com showUserView/showAdminView */
+        #user-tabs { display: none; }
+        body.show-user-tabs #user-tabs { display: flex; }
+        /* Guarda contra zoom-out por overflow horizontal: conteúdo ADM nunca
+           pode ultrapassar a largura da tela (corta em vez de alargar a página) */
+        #admin-view section, #admin-view section > * { max-width: 100%; }
+        #rgf-consult-result { overflow-wrap: anywhere; }
+        
+        @media print {
+                    .no-print { display: none !important; }
+                }
+
+                /* ===== v3.3: Visualizador fullscreen do cardápio ===== */
+                /* Wizard dentro do viewer: cartão claro flutuando no rodapé escuro */
+                #menu-viewer-buttons > #order-wizard-container {
+                    background: #ffffff !important;
+                    border: none !important;
+                    border-radius: 1rem 1rem 0 0;
+                    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+                    margin-bottom: 0 !important;
+                    max-height: 45vh;
+                    overflow-y: auto;
+                }
+                /* Botões do wizard grandes e fáceis de tocar (idosos) */
+                #menu-viewer-buttons .wizard-btn {
+                    min-height: 56px;
+                    font-size: 1rem;
+                }
+                /* Barra de progresso do wizard visível no fundo escuro */
+                #menu-viewer-buttons #wizard-progress span {
+                    box-shadow: 0 0 4px rgba(255,255,255,0.3);
+                }
+                /* Container do submit (revisar pedido) também entra no rodapé */
+                #menu-viewer-buttons > #submitButtonContainer {
+                    margin-top: 0.5rem;
+                }
+            </style>
 <script src="js/menu-viewer.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-black text-gray-800 dark:text-gray-200 transition-colors duration-300">
@@ -420,10 +573,6 @@
                     <span>Pedidos</span>
                     <span id="ordersBadge" class="admin-badge hidden">0</span>
                 </button>
-                <button type="button" data-admin-tab="notifications" class="admin-tab-btn">
-                    <span class="text-lg leading-none">🔔</span>
-                    <span>Notificações</span>
-                </button>
             </nav>
 
             <!-- Gerenciamento de Cardápio -->
@@ -587,120 +736,15 @@
                     </div>
                     <!-- APRIMORAMENTO: Botão de PDF mais proeminente como FAB (acima da bottom bar) -->
                     <button id="generateReportBtn" class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-700 dark:hover:bg-blue-400 transition-transform transform active:scale-95 z-[999] flex items-center justify-center" title="Gerar PDF">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504-1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
                     </button>
                 </div>
                 <div id="ordersTableContainer" class="overflow-x-auto"><p class="text-gray-500 dark:text-gray-400 font-medium">A carregar pedidos...</p></div>
             </section>
-
-            <!-- ===== ABA DE NOTIFICAÇÕES (NOVA) ===== -->
-            <section id="notifications-section" data-admin-panel="notifications" class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-6 mb-8 border border-gray-100 dark:border-zinc-800 transition-colors">
-                <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-6 flex items-center gap-2">🔔 Central de Notificações</h2>
-                
-                <!-- Configurações Globais -->
-                <div class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl">
-                    <h3 class="font-bold text-blue-800 dark:text-blue-300 mb-4">⚙️ Configurações Globais</h3>
-                    <div class="grid sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Timer padrão lembrete (minutos)</label>
-                            <input type="number" id="globalReminderTimer" min="1" max="1440" value="15" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tempo padrão para lembrete de quem não pediu (padrão: 15 min)</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Verificação diária "Todos pediram" (hora)</label>
-                            <input type="time" id="globalDailyCheckTime" value="10:00" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Horário da verificação automática (padrão: 10:00 BRT)</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex gap-2">
-                        <button id="saveGlobalNotifConfig" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer">💾 Salvar Configurações Globais</button>
-                        <button id="testGlobalNotification" class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white font-bold rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors cursor-pointer">🔔 Testar Notificação Global</button>
-                    </div>
-                </div>
-
-                <!-- Envio Manual -->
-                <div class="mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/30 rounded-xl">
-                    <h3 class="font-bold text-purple-800 dark:text-purple-300 mb-4">📝 Envio Manual de Notificação</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Destinatários</label>
-                            <select id="manualNotifTarget" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                                <option value="all">👥 Todos (Funcionários + Admins)</option>
-                                <option value="funcionario">👤 Apenas Funcionários</option>
-                                <option value="admin">👑 Apenas Admins</option>
-                                <option value="specific">🎯 Funcionário Específico (RGF)</option>
-                            </select>
-                        </div>
-                        <div id="specificRGFContainer" class="hidden">
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">RGF do Funcionário</label>
-                            <input type="text" id="manualNotifRGF" inputmode="numeric" placeholder="Ex: 22823" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Título da Notificação</label>
-                            <input type="text" id="manualNotifTitle" placeholder="Ex: Novo Cardápio Disponível!" class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Mensagem</label>
-                            <textarea id="manualNotifBody" rows="3" placeholder="Digite a mensagem que deseja enviar..." class="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"></textarea>
-                        </div>
-                        <div class="flex gap-2">
-                            <button id="sendManualNotification" class="px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white font-bold rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors cursor-pointer">📤 Enviar Notificação</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Lista de Dispositivos Registrados -->
-                <div class="mb-8">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-gray-700 dark:text-gray-200">📱 Dispositivos Registrados</h3>
-                        <button id="refreshDeviceList" class="px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 text-sm font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer">🔄 Atualizar Lista</button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden">
-                            <thead>
-                                <tr class="bg-gray-50 dark:bg-zinc-800/80">
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Token/Endpoint</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">RGF</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Role</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Plataforma</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Status</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Timer (min)</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Tipos Ativos</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="deviceTokensTableBody">
-                                <tr><td colspan="8" class="py-8 text-center text-gray-500 dark:text-gray-400">Carregando dispositivos...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Logs de Notificações Enviadas -->
-                <div>
-                    <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-4">📋 Histórico Recente (últimas 50)</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white dark:bg-zinc-900 border dark:border-zinc-800 rounded-lg overflow-hidden">
-                            <thead>
-                                <tr class="bg-gray-50 dark:bg-zinc-800/80">
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Data/Hora</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Tipo</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Destinatários</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Título</th>
-                                    <th class="py-2 px-3 border-b dark:border-zinc-700 text-left text-gray-700 dark:text-gray-300 font-bold">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="notificationHistoryBody">
-                                <tr><td colspan="5" class="py-8 text-center text-gray-500 dark:text-gray-400">Carregando histórico...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
         </div>
     </div>
 
-    <!-- Modals (NO NÍVEL DO BODY - FORA DAS VIEWS) -->
+    <!-- Modals -->
     <!-- Modal de Zoom da Imagem -->
     <div id="image-zoom-modal" class="modal-overlay hidden no-print cursor-zoom-out">
         <div class="modal-content">
@@ -826,27 +870,6 @@
 
     <!-- Elemento base do Toast -->
     <div id="app-toast"></div>
-
-    <!-- ===== Visualizador fullscreen do cardápio (v3.3) ===== -->
-    <div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
-        <!-- Topo: fecha + controles de zoom -->
-        <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
-            <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
-            <div class="flex items-center gap-2">
-                <button type="button" id="viewer-zoom-out" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Diminuir">−</button>
-                <button type="button" id="viewer-reset" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-sm font-bold active:scale-90 transition-transform" title="Tamanho original">1:1</button>
-                <button type="button" id="viewer-zoom-in" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Aumentar">+</button>
-            </div>
-        </div>
-        <!-- Palco da imagem (pinch-zoom + pan) -->
-        <div id="menu-viewer-stage" class="flex-1 overflow-hidden relative touch-none flex items-center justify-center">
-            <img id="menu-viewer-img" src="" alt="Cardápio ampliado" class="max-w-full max-h-full object-contain select-none" draggable="false" style="transform-origin:center center;">
-        </div>
-        <!-- Botões de escolha FIXOS embaixo -->
-        <div id="menu-viewer-buttons" class="shrink-0 p-3 pb-4 max-h-[45vh] overflow-y-auto" style="background:#18181b;">
-        </div>
-    </div>
-
     <!-- ===== Modulos do app v2 (JS classico, sem imports ES) ===== -->
     <script src="js/config.js"></script>
     <script src="js/firebase.js"></script>
@@ -860,5 +883,23 @@
     <script src="js/notificationTrigger.js"></script>
     <script src="js/pushRegistration.js"></script>
     <script src="js/app.js"></script>
+<div id="menu-viewer-modal" class="hidden fixed inset-0 z-[1500] flex flex-col no-print" style="background:rgba(0,0,0,0.92);">
+            <!-- Topo: fecha + controles de zoom -->
+            <div class="flex items-center justify-between p-3 shrink-0" style="background:rgba(0,0,0,0.3);">
+                <button type="button" id="viewer-close-btn" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Fechar">✕</button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="viewer-zoom-out" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Diminuir">−</button>
+                    <button type="button" id="viewer-reset" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-sm font-bold active:scale-90 transition-transform" title="Tamanho original">1:1</button>
+                    <button type="button" id="viewer-zoom-in" class="w-11 h-11 flex items-center justify-center bg-white/15 text-white rounded-full text-2xl font-bold active:scale-90 transition-transform" title="Aumentar">+</button>
+                </div>
+            </div>
+            <!-- Palco da imagem (pinch-zoom + pan) -->
+            <div id="menu-viewer-stage" class="flex-1 overflow-hidden relative touch-none flex items-center justify-center">
+                <img id="menu-viewer-img" src="" alt="Cardápio ampliado" class="max-w-full max-h-full object-contain select-none" draggable="false" style="transform-origin:center center;">
+            </div>
+            <!-- Botões de escolha FIXOS embaixo -->
+            <div id="menu-viewer-buttons" class="shrink-0 p-3 pb-4 max-h-[45vh] overflow-y-auto" style="background:#18181b;">
+            </div>
+        </div>
 </body>
 </html>
