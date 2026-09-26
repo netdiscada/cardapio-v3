@@ -1,5 +1,5 @@
 // Cardapio Quatinga v3 - notificationTrigger.js
-// Chama o Cloudflare Worker para disparar push FCM real (barra de status Android)
+// Chama o Cloudflare Worker para disparar push FCM + Web Push real
 // Incluir no index.html ANTES de app.js: <script src="js/notificationTrigger.js"></script>
 
 (function (global) {
@@ -26,7 +26,8 @@
   }
 
   // Quando admin salva cardápio da próxima semana
-  global.triggerNewMenuNotification = async function(isNextWeek) {
+  // notifyAdminAlso: true -> admin também recebe (para testar no próprio celular)
+  global.triggerNewMenuNotification = async function(isNextWeek, notifyAdminAlso = false) {
     const title = isNextWeek
       ? '📅 Cardápio da Próxima Semana Disponível!'
       : '🍽️ Novo Cardápio da Semana!';
@@ -39,6 +40,7 @@
       title,
       body,
       role: 'funcionario',
+      notifyAdminAlso,
       data: { type: 'new_menu', isNextWeek: String(isNextWeek) }
     });
   };

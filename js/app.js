@@ -231,10 +231,11 @@
         await fb.setDoc(global.getMenuDocRef(), { nextMenuImageBase64: st.finalImageBase64, nextHolidays: selectedHolidays, targetRotationDate: nextMonday.getTime() }, { merge: true });
         showToast("Cardápio da Próxima Semana salvo e disponível!", "success");
         document.getElementById('whatsapp-notification-container').classList.remove('hidden');
-        // Dispara notificação push real via Vercel endpoint
-        if (global.triggerNewMenuNotification) {
-          global.triggerNewMenuNotification(true);
-        }
+        // Dispara notificação push real via Worker (FCM + Web Push)
+                // notifyAdminAlso: true -> admin também recebe (para testar no próprio celular)
+                if (global.triggerNewMenuNotification) {
+                  global.triggerNewMenuNotification(true, true);
+                }
         st.finalImageBase64 = null; uploadBtn.innerHTML = "✅ Salvo com sucesso!";
       } catch (error) {
         uploadBtn.disabled = false; uploadBtn.textContent = "Tentar Salvar Novamente";
