@@ -1075,4 +1075,5 @@
   global.sendManualNotification = sendManualNotification;
   global.refreshDeviceTokensList = refreshDeviceTokensList;
   global.loadNotificationHistory = loadNotificationHistory;
+  global.openPublicReportModal = openPublicReportModal;
 })(window);
