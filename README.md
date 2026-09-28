@@ -1,6 +1,6 @@
-# Cardápio Quatinga — v2 modular (área de testes)
+# Cardápio Quatinga — v3 modular (área de testes)
 
-Esta é a **versão 2.0** do site Cardápio Quatinga (Delícias Urbanas), reestruturada do zero em JavaScript modular puro (sem build/transpilador/framework). É uma **área de testes** — não afeta o site principal (que hoje é um `index.html` monolítico no repo `netdiscada/Card-pio-Regional`).
+Esta é a **versão 3.0** do site Cardápio Quatinga (Delícias Urbanas), reestruturada do zero em JavaScript modular puro (sem build/transpilador/framework). É uma **área de testes** — não afeta o site principal (que hoje é um `index.html` monolítico no repo `netdiscada/Card-pio-Regional`).
 
 ## Estrutura
 - `index.html` — casca fina com toda a estrutura HTML
